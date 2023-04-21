@@ -1,0 +1,9 @@
+global string $gMainWindow;
+
+string $lsystemMenu = `menu -p $gMainWindow -label "Nexus"`;
+    menuItem -label "Create Nexus Rigidbody" -command "showLSystemGUI;";
+    menuItem -label "Create Nexus Cloth" -command "showLSystemGUI;";
+    
+global proc showLSystemGUI()
+{
+}
