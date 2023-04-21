@@ -4,11 +4,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31911.196
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nexusPlugin", "nexusPlugin\nexusPlugin.vcxproj", "{4637C949-0D3C-4E8E-A663-A6A492CF7280}"
-	ProjectSection(ProjectDependencies) = postProject
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB} = {D5FC00B4-398B-32BE-AD54-D51249BD82FB}
-	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nexus", "..\..\Nexus\build\nexus.vcxproj", "{D5FC00B4-398B-32BE-AD54-D51249BD82FB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nexus", "Nexus\build\nexus.vcxproj", "{72197F1D-065F-3162-992B-B3A6C488C601}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,18 +35,18 @@ Global
 		{4637C949-0D3C-4E8E-A663-A6A492CF7280}.RelWithDebInfo|x64.Build.0 = Release|x64
 		{4637C949-0D3C-4E8E-A663-A6A492CF7280}.RelWithDebInfo|x86.ActiveCfg = Release|Win32
 		{4637C949-0D3C-4E8E-A663-A6A492CF7280}.RelWithDebInfo|x86.Build.0 = Release|Win32
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.Debug|x64.ActiveCfg = Debug|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.Debug|x64.Build.0 = Debug|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.Debug|x86.ActiveCfg = Debug|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.MinSizeRel|x86.ActiveCfg = MinSizeRel|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.Release|x64.ActiveCfg = Release|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.Release|x64.Build.0 = Release|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.Release|x86.ActiveCfg = Release|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
-		{D5FC00B4-398B-32BE-AD54-D51249BD82FB}.RelWithDebInfo|x86.ActiveCfg = RelWithDebInfo|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.Debug|x64.ActiveCfg = Debug|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.Debug|x64.Build.0 = Debug|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.Debug|x86.ActiveCfg = Debug|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.MinSizeRel|x86.ActiveCfg = MinSizeRel|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.Release|x64.ActiveCfg = Release|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.Release|x64.Build.0 = Release|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.Release|x86.ActiveCfg = Release|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{72197F1D-065F-3162-992B-B3A6C488C601}.RelWithDebInfo|x86.ActiveCfg = RelWithDebInfo|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
