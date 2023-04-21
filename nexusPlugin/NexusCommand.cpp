@@ -48,23 +48,10 @@ MStatus NexusCommand::doIt(const MArgList& argList)
         argData.getFlagArgument(iterFlag, 0, iter);
     }
 
-    //LSystem lSystem = LSystem();
-    //lSystem.setDefaultAngle(angle);
-    //lSystem.setDefaultStep(step);
-    //lSystem.loadProgramFromString(grammar.asChar());
+    
+    //solver->addObject(std::move(cloth));
+    //solver->precomputeConstraints();
 
-    //std::vector<LSystem::Branch> branches;
-    //lSystem.process(iter, branches);
-
-    //// message in Maya output window
-    //std::cout.flush();
-
-    //int len = branches.size();
-    //std::cout << "length " << len << std::endl;
-
-    //for (int i = 0; i < len; i++)
-    //{
-    //    LSystem::Branch& branch = branches[i];
 
     //    // message in scriptor editor
     //    std::string curveName = "curve" + to_string(i);
@@ -74,7 +61,7 @@ MStatus NexusCommand::doIt(const MArgList& argList)
     //}
 
     // message in scriptor editor
-    std::string dialogTxt = "print(\"" + std::string(mesh.asChar()) + "\")";
+    std::string dialogTxt = "print(\"hellu\");";// +std::to_string(solver->getObjects().size()) + ";";
     MString dialog = dialogTxt.c_str();
     status = MGlobal::executeCommand(dialog);
 
