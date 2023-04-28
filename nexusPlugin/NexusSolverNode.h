@@ -1,8 +1,10 @@
 #pragma once
 
+#include "NexusClothNode.h"
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnNumericAttribute.h>
+#include <maya/MFnCompoundAttribute.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MIntArray.h>
 #include <maya/MFnMesh.h>
@@ -14,11 +16,13 @@
 #include <nexus/PBDSolver.h>
 #include <maya/MFnVectorArrayData.h>
 #include<maya/MFnArrayAttrsData.h>
+#include<maya/MArrayDataBuilder.h>
 #include<maya/MAnimControl.h>
+#include<maya/MItGeometry.h>
 
 #define McheckErr(stat,msg)			\
 	if ( MS::kSuccess != stat ) {	\
-		cerr << msg;				\
+		MGlobal::displayInfo(msg);  \
 		return MS::kFailure;		\
 	}
 
@@ -27,26 +31,14 @@ class NexusSolverNode : public MPxNode
 private:
 	uPtr<PBDSolver> solver;
 	MTime m_lastTime;
-	//NexusSolverNode() :solver(mkU<PBDSolver>()){};
-	NexusSolverNode() :solver(mkU<PBDSolver>()), m_lastTime(0.f) {};
-	NexusSolverNode(const NexusSolverNode&) = delete;
-	NexusSolverNode& operator=(const NexusSolverNode&) = delete;
-	~NexusSolverNode() override {};	
 
 public:
-	
+	NexusSolverNode() :solver(mkU<PBDSolver>()), m_lastTime(0.f) {};
+	~NexusSolverNode() override {};
 	MStatus compute(const MPlug& plug, MDataBlock& data) override;
 	static  void* creator();
 	static  MStatus initialize();
-
-	static NexusSolverNode* getInstance() {
-		static NexusSolverNode instance;
-		return &instance;
-	}
-
-	PBDSolver* getSolver() const {
-		return solver.get();
-	}
+	//MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
 
 	// Compound grouping attributes
 	static MObject forcesCmpd;
@@ -61,4 +53,12 @@ public:
 	static MObject timeScale;
 	static MTypeId id;
 	static MObject outputGeometry;
+	static MObject outputClothMeshes;
+
+	//Cloth related attribs
+	static MObject inClothMeshes;
+	static MObject inClothMass;
+	static MObject inClothkStretch;
+	static MObject inClothkBend;
+	static MObject inClothMesh;
 };

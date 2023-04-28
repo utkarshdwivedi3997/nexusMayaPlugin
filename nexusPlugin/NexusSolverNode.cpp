@@ -6,6 +6,7 @@
 #include <maya/MDataHandle.h>
 
 #include <maya/MPxNode.h>
+#include <maya/MPxGeometryFilter.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -27,80 +28,88 @@ MObject NexusSolverNode::timeStep;
 MObject NexusSolverNode::timeScale;
 MObject NexusSolverNode::outputGeometry;
 
+//Cloth-related
+MObject NexusSolverNode::inClothMeshes;
+MObject NexusSolverNode::inClothMesh;
+MObject NexusSolverNode::inClothMass;
+MObject NexusSolverNode::inClothkStretch;
+MObject NexusSolverNode::inClothkBend;
+MObject NexusSolverNode::outputClothMeshes;
+
+
 void* NexusSolverNode::creator()
 {
-	return (void*)getInstance();
+	return new NexusSolverNode();
 }
 
 MStatus NexusSolverNode::initialize()
 {
-	MFnCompoundAttribute forcesAttr;
-	MFnCompoundAttribute timeAttr;
-
 	MFnNumericAttribute nAttr;
-	MFnNumericAttribute gravAttr;
-	MFnNumericAttribute windMagAttr;
-	MFnNumericAttribute windDirAttr;
-
 	MFnUnitAttribute timeStepAttr;
-	MFnNumericAttribute timeScaleAttr;
 	MFnTypedAttribute geomAttr;
+	MFnCompoundAttribute compoundAttr;
 
 	MStatus returnStatus;
 
 	// Create attributes (initialization)
-	NexusSolverNode::gravity = gravAttr.create("gravity", "g",
-		MFnNumericData::kDouble,
-		-9.8,
-		&returnStatus);
+	NexusSolverNode::gravity = nAttr.create("gravity", "g", MFnNumericData::kDouble, -9.8, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode gravity attribute\n");
 
-	NexusSolverNode::windMag = windMagAttr.create("windMag", "wMag",
-		MFnNumericData::kDouble,
-		0.0,
-		&returnStatus);
+	NexusSolverNode::windMag = nAttr.create("windMag", "wMag", MFnNumericData::kDouble, 0.0, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode windMag attribute\n");
 
-	NexusSolverNode::windDirX = nAttr.create("windDirX", "wDirX",
-		MFnNumericData::kDouble,
-		0.0,
-		&returnStatus);
+	NexusSolverNode::windDirX = nAttr.create("windDirX", "wDirX", MFnNumericData::kDouble, 0.0, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode windDirX attribute\n");	
-	NexusSolverNode::windDirY = nAttr.create("windDirY", "wDirY",
-		MFnNumericData::kDouble,
-		0.0,
-		&returnStatus);
+
+	NexusSolverNode::windDirY = nAttr.create("windDirY", "wDirY", MFnNumericData::kDouble, 0.0, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode windDirY attribute\n");
-	NexusSolverNode::windDirZ = nAttr.create("windDirZ", "wDirZ",
-		MFnNumericData::kDouble,
-		0.0,
-		&returnStatus);
+
+	NexusSolverNode::windDirZ = nAttr.create("windDirZ", "wDirZ", MFnNumericData::kDouble, 0.0, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode windDirX attribute\n");
 
-	NexusSolverNode::windDir = nAttr.create("windDir", "wDir",
-		windDirX,
-		windDirY,
-		windDirZ,
-		&returnStatus);
+	NexusSolverNode::windDir = nAttr.create("windDir", "wDir", windDirX, windDirY, windDirZ, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode windDir attribute\n");
 
-	NexusSolverNode::timeStep = timeStepAttr.create("timeStep", "tSt",
-		MFnUnitAttribute::kTime,
-		0.0,
-		&returnStatus);
+	NexusSolverNode::timeStep = timeStepAttr.create("timeStep", "tSt", MFnUnitAttribute::kTime, 0.0, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode timeStep attribute\n");
 
-	NexusSolverNode::timeScale = timeScaleAttr.create("timeScale", "tSc",
-		MFnNumericData::kDouble,
-		1.0,
-		&returnStatus);
+	NexusSolverNode::timeScale = nAttr.create("timeScale", "tSc", MFnNumericData::kDouble, 1.0, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode timeScale attribute\n");
 
-	NexusSolverNode::outputGeometry = geomAttr.create("outputGeometry", "oGeom",
-		MFnArrayAttrsData::kDynArrayAttrs,
-		MObject::kNullObj,
-		&returnStatus);
+	NexusSolverNode::outputGeometry = geomAttr.create("outputGeometry", "oGeom", MFnArrayAttrsData::kDynArrayAttrs, MObject::kNullObj, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode output geometry attribute\n");
+
+	
+	NexusSolverNode::inClothMass = nAttr.create("mass", "m", MFnNumericData::kDouble, 1.0, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusClothNode mass attribute\n");
+
+	NexusSolverNode::inClothkStretch = nAttr.create("kStretch", "kStretch", MFnNumericData::kDouble, 1.0, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusClothNode inClothkStretch attribute\n");
+
+	NexusSolverNode::inClothkBend = nAttr.create("kBend", "kBend", MFnNumericData::kDouble, 1.0, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusClothNode inClothkBend attribute\n");
+
+	NexusSolverNode::inClothMesh = geomAttr.create("inClothMesh", "icm", MFnData::kMesh, MObject::kNullObj, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode input cloth mesh attribute\n");
+
+	NexusSolverNode::outputClothMeshes = geomAttr.create("outCloths", "ocls", MFnData::kMesh, MObject::kNullObj, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode output cloth meshes attribute\n");
+	geomAttr.setArray(true);
+	geomAttr.setHidden(true);
+	geomAttr.setUsesArrayDataBuilder(true);
+
+	NexusSolverNode::inClothMeshes = compoundAttr.create("inCloths", "icls", &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode Input Cloths attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inClothMass);
+	McheckErr(returnStatus, "ERROR adding child attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inClothkStretch);
+	McheckErr(returnStatus, "ERROR adding child attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inClothkBend);
+	McheckErr(returnStatus, "ERROR adding child attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inClothMesh);
+	McheckErr(returnStatus, "ERROR adding child attribute\n");
+	compoundAttr.setArray(true);
+	//compoundAttr.setHidden(true);
 
 	// Add attributes to node
 	returnStatus = addAttribute(NexusSolverNode::gravity);
@@ -119,6 +128,12 @@ MStatus NexusSolverNode::initialize()
 	McheckErr(returnStatus, "ERROR adding timeScale attribute\n");
 
 	returnStatus = addAttribute(NexusSolverNode::outputGeometry);
+	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
+
+	returnStatus = addAttribute(NexusSolverNode::inClothMeshes);
+	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
+
+	returnStatus = addAttribute(NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
 
 	//// Attribute affects (changing attributes should change output)
@@ -141,39 +156,58 @@ MStatus NexusSolverNode::initialize()
 	returnStatus = attributeAffects(NexusSolverNode::timeScale,
 		NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR in timeScale attributeAffects\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::inClothMeshes,
+		NexusSolverNode::outputClothMeshes);
+	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::inClothMass,
+		NexusSolverNode::outputClothMeshes);
+	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
+
+
 	return MS::kSuccess;
 }
+
 
 MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 
 {
 	MStatus returnStatus = MStatus::kSuccess;
-	//std::string dialogTxt = "print " +std::to_string(solver->getObjects().size()) + ";";
-	//MString dialog = dialogTxt.c_str();
-	//MGlobal::executeCommand(dialog);
-	//return returnStatus;
+	MGlobal::displayInfo(MString("At least solver's compute got called huh."));
+	if (plug == outputClothMeshes) {
+		solver = mkU<PBDSolver>();
+		MGlobal::displayInfo(MString("Started from the bottom now we here"));
+		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
+		//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
+		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
+		McheckErr(returnStatus, "Couldn't build the output handle for cloth meshes\n");
+		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
+
+		for (uint i = 0; i < clothsInArray.elementCount(); i++) {
+			clothsInArray.jumpToArrayElement(i);
+			MDataHandle clothElement = clothsInArray.inputValue();
+			//McheckErr(returnStatus, "Cloth array couldn't be read\n");
+			float kStretch = clothElement.child(inClothkStretch).asDouble();
+			float kBend = clothElement.child(inClothkBend).asDouble();
+			MObject mesh = clothElement.child(inClothMesh).asMesh();
+			
+			outputArrayHandle.jumpToArrayElement(i);
+			outputArrayHandle.outputValue().copy(clothElement.child(inClothMesh));
+			
+			//clothsInArray.next();
+		}
+
+		data.setClean(plug);
+		return MS::kSuccess;
+	}
+	
 	if (plug == outputGeometry) {
-		// Input handles
-		MDataHandle gravityHandle = data.inputValue(gravity, &returnStatus);
-		McheckErr(returnStatus, "Error getting gravity data handle\n");
-		double g = gravityHandle.asDouble();
-
-		MDataHandle windDirHandle = data.inputValue(windDir, &returnStatus);
-		McheckErr(returnStatus, "Error getting windDir data handle\n");
-		double wd = windDirHandle.asDouble();
-
-		MDataHandle windMagHandle = data.inputValue(windMag, &returnStatus);
-		McheckErr(returnStatus, "Error getting windMag data handle\n");
-		double wm = windMagHandle.asDouble();
 
 		MDataHandle timeStepHandle = data.inputValue(timeStep, &returnStatus);
 		McheckErr(returnStatus, "Error getting timeStep data handle\n");
 		MTime tStep = timeStepHandle.asTime();
 		int timeVal = (int)tStep.as(MTime::kFilm);
-
-		MDataHandle timeScaleHandle = data.inputValue(timeScale, &returnStatus);
-		McheckErr(returnStatus, "Error getting windMag data handle\n");
-		double tSc = timeScaleHandle.asDouble();
 
 		// Output handle
 		MDataHandle outputGeometryHandle = data.outputValue(outputGeometry, &returnStatus);
@@ -208,6 +242,9 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 		MGlobal::executeCommand(dialog);
 		dialog = ("print " + std::to_string(playbackSpeed*frameRate) + ";").c_str();
 		MGlobal::executeCommand(dialog);*/
+
+		data.setClean(plug);
+		return MS::kSuccess;
 		
 		solver->update(deltaT);
 		for (auto& obj : solver->getObjects()) {
