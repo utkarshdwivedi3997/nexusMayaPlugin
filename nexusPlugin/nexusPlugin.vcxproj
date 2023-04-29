@@ -117,13 +117,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;NT_PLUGIN;REQUIRE_IOSTREAM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\nagpa\OneDrive\Desktop\Saksham\Penn\Sem 2\CIS 6600 Advanced Topics in Computer Graphics &amp; Animation\Authoring Tool\Nexus\3rdparty\eigen-3.2.8;C:\Users\nagpa\OneDrive\Desktop\Saksham\Penn\Sem 2\CIS 6600 Advanced Topics in Computer Graphics &amp; Animation\Authoring Tool\Nexus\3rdparty\glm;C:\Users\nagpa\OneDrive\Desktop\Saksham\Penn\Sem 2\CIS 6600 Advanced Topics in Computer Graphics &amp; Animation\Authoring Tool\Nexus\src;C:\Program Files\Autodesk\Maya2022\include;.;D:\Autodesk\Maya\Maya2022\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Nexus\3rdparty\eigen-3.2.8;$(SolutionDir)\Nexus\3rdparty\glm;$(SolutionDir)\Nexus\src;.;%MAYA_LOCATION%\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(ProjectName).mll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Users\nagpa\OneDrive\Desktop\Saksham\Penn\Sem 2\CIS 6600 Advanced Topics in Computer Graphics &amp; Animation\Authoring Tool\Nexus\Debug;D:\Autodesk\Maya\Maya2022\lib;C:\Program Files\Autodesk\Maya2022\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Nexus\Debug;%MAYA_LOCATION%\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Foundation.lib; OpenMaya.lib; OpenMayaUI.lib; OpenMayaAnim.lib; OpenMayaFX.lib; OpenMayaRender.lib; Image.lib; opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/export:initializePlugin /export:uninitializePlugin %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -158,8 +158,8 @@
     <ClCompile Include="PluginMain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Nexus\build\nexus.vcxproj">
-      <Project>{d5fc00b4-398b-32be-ad54-d51249bd82fb}</Project>
+    <ProjectReference Include="..\Nexus\build\nexus.vcxproj">
+      <Project>{72197f1d-065f-3162-992b-b3a6c488c601}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
