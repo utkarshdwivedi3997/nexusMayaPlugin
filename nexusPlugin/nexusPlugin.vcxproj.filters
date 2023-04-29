@@ -24,6 +24,9 @@
     <ClInclude Include="NexusClothNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="NexusRigidBodyNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PluginMain.cpp">
@@ -36,6 +39,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NexusClothNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NexusRigidBodyNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

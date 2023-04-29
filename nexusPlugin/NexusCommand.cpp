@@ -1,6 +1,4 @@
 #include "NexusCommand.h"
-
-
 #include <maya/MGlobal.h>
 #include <list>
 

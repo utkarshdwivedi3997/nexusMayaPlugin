@@ -19,19 +19,20 @@
 #include "NexusCommand.h"
 #include "NexusSolverNode.h"
 #include "NexusClothNode.h"
+#include "NexusRigidBodyNode.h"
 
 MStatus initializePlugin(MObject obj)
 {
     MStatus   status = MStatus::kSuccess;
-    MFnPlugin plugin(obj, "Nexus Physics", "1.0", "Any");
+    MFnPlugin plugin(obj, "NexusPhysics");
 
     // Register Command
-    status = plugin.registerCommand("nexus", NexusCommand::creator, NexusCommand::newSyntax);
+    status = plugin.registerCommand("nexus", NexusCommand::creator);
     if (!status) {
         status.perror("registerCommand");
         return status;
     }
-
+    
     // Register Nodes
     status = plugin.registerNode("nexusSolverNode", NexusSolverNode::id,
         NexusSolverNode::creator, NexusSolverNode::initialize);
@@ -40,12 +41,20 @@ MStatus initializePlugin(MObject obj)
         status.perror("registerNode NexusSolverNode");
         return status;
     }
-
+    
     status = plugin.registerNode("nexusClothNode", NexusClothNode::id,
         NexusClothNode::creator, NexusClothNode::initialize);
     if (!status)
     {
         status.perror("registerNode NexusClothNode");
+        return status;
+    }
+
+    status = plugin.registerNode("nexusRigidBodyNode", NexusRigidBodyNode::id,
+        NexusRigidBodyNode::creator, NexusRigidBodyNode::initialize);
+    if (!status)
+    {
+        status.perror("registerNode NexusRigidBodyNode");
         return status;
     }
 
@@ -69,8 +78,8 @@ MStatus uninitializePlugin(MObject obj)
         status.perror("deregisterCommand");
         return status;
     }
-
-    status = plugin.deregisterNode(NexusSolverNode::id);
+    
+   status = plugin.deregisterNode(NexusSolverNode::id);
     if (!status)
     {
         status.perror("deregisterNode NexusSolverNode");
@@ -81,6 +90,13 @@ MStatus uninitializePlugin(MObject obj)
     if (!status)
     {
         status.perror("deregisterNode NexusClothNode");
+        return status;
+    }
+
+    status = plugin.deregisterNode(NexusRigidBodyNode::id);
+    if (!status)
+    {
+        status.perror("deregisterNode NexusRigidBodyNode");
         return status;
     }
 

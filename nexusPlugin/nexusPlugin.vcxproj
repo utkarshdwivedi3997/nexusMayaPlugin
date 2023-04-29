@@ -147,11 +147,13 @@
   <ItemGroup>
     <ClInclude Include="NexusClothNode.h" />
     <ClInclude Include="NexusCommand.h" />
+    <ClInclude Include="NexusRigidBodyNode.h" />
     <ClInclude Include="NexusSolverNode.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NexusClothNode.cpp" />
     <ClCompile Include="NexusCommand.cpp" />
+    <ClCompile Include="NexusRigidBodyNode.cpp" />
     <ClCompile Include="NexusSolverNode.cpp" />
     <ClCompile Include="PluginMain.cpp" />
   </ItemGroup>
