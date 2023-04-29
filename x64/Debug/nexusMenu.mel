@@ -1,12 +1,48 @@
 global string $gMainWindow;
 
-string $lsystemMenu = `menu -p $gMainWindow -label "Nexus"`;
-    menuItem -label "Create Nexus Rigidbody" -command "showLSystemGUI;";
-    menuItem -label "Create Nexus Cloth" -command "showLSystemGUI;";
+string $nexusMenu = `menu -p $gMainWindow -label "Nexus"`;
+    menuItem -label "Create Nexus Cloth" -command "createNexusObject(0);";
+    menuItem -label "Create Nexus Rigidbody" -command "createNexusObject(1);";
 
 currentUnit -time 40fps;
 playbackOptions -loop "once" -maxTime 1000;
 
-global proc showLSystemGUI()
+// int nexusObjectType
+// 0 = cloth
+// 1 = rigidbody
+global proc createNexusObject(int $nexusObjectType)
 {
+    string $sel[] = `ls -sl -type "transform"`; // get all selected transform nodes
+    string $shapes[] = `listRelatives -s $sel`;
+
+    if (`size $shapes` == 0)    // no valid selection
+    {
+        confirmDialog -title "Create Nexus Object Error" -message "You have no selected meshes. Please select at least 1 mesh to convert to a Nexus Object!" -button "OK";
+    }
+    switch ($nexusObjectType)
+    {
+        case 0:
+            createNexusClothes($shapes);
+            break;
+        case 1:
+            createNexusRigidbodies($shapes);
+            break;
+    }
+}
+
+// Procedure to create NexusCloth objects out of the selected shapes
+global proc createNexusClothes(string $shapes[])
+{
+    for ($item in $shapes)
+    {
+        // Create NexusClothNode for each of these shapes!
+    }
+}
+
+global proc createNexusRigidbodies(string $shapes[])
+{
+    for ($item in $shapes)
+    {
+        // Create NexusRigidbodyNode for each of these shapes!
+    }
 }
