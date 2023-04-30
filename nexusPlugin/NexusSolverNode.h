@@ -41,7 +41,6 @@ public:
 	MStatus connectionMade(const MPlug& affectedPlug, const MPlug& inputOtherPlug, bool asSrc) override;
 	static  void* creator();
 	static  MStatus initialize();
-	//MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
 
 	// Compound grouping attributes
 	static MObject forcesCmpd;
