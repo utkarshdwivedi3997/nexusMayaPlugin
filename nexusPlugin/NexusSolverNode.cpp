@@ -465,7 +465,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 
 		}
 
-		MArrayDataHandle rbsInArray = data.inputArrayValue(inClothStructs);
+		MArrayDataHandle rbsInArray = data.inputArrayValue(inRBStructs);
 		outputArrayHandle = data.outputArrayValue(outputRBMeshes, &returnStatus);
 		outputArrayBuilder = outputArrayHandle.builder();
 
@@ -473,8 +473,8 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 		{
 			rbsInArray.jumpToArrayElement(i);
 			MDataHandle rbElement = rbsInArray.inputValue();
-			float mass = rbElement.child(inClothMass).asDouble();
-			MFnMesh mesh = rbElement.child(inClothMesh).asMesh();
+			float mass = rbElement.child(inRBMesh).asDouble();
+			MFnMesh mesh = rbElement.child(inRBMesh).asMesh();
 
 			MPointArray ptArr;
 			MPointArray outPtArr;
