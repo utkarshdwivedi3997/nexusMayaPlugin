@@ -352,7 +352,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 			//MGlobal::displayInfo(MString(s.c_str()));
 		}
 
-		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, FIXED_PARTICLE_SIZE * 0.1f, FIXED_PARTICLE_SIZE * 0.1f, FIXED_PARTICLE_SIZE * 0.1f, 0.1f);
+		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, FIXED_PARTICLE_SIZE, FIXED_PARTICLE_SIZE, FIXED_PARTICLE_SIZE, 0.1f);
 
 		float particleMass = mass / voxelizedMesh->nvertices;
 
@@ -564,7 +564,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 					//MGlobal::displayInfo(MString(s.c_str()));
 				}
 
-				vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, FIXED_PARTICLE_SIZE * 0.1f, FIXED_PARTICLE_SIZE * 0.1f, FIXED_PARTICLE_SIZE * 0.1f, 0.1f);
+				vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 1.0f, 1.0f, 1.0f, 0.1f);
 
 				float particleMass = mass / voxelizedMesh->nvertices;
 
