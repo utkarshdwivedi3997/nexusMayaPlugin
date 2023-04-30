@@ -13,7 +13,7 @@
 #include <maya/MPlug.h>
 #include <maya/MFnMeshData.h>
 #include <maya/MDagPath.h>
-#include <maya/MItMeshEdge.h>
+#include <maya/MItMeshPolygon.h>
 #include <maya/MIOStream.h>
 #include <nexus/PBDSolver.h>
 #include <nexus/NexusCloth.h>
@@ -29,11 +29,45 @@
 		return MS::kFailure;		\
 	}
 
+
+//bool meshesAreIdentical(MObject mm1, MObject mm2) {
+//	MFnMesh m1(mm1);
+//	MFnMesh m2(mm2);
+//	if (m1.numVertices() != m2.numVertices() ||
+//		m1.numEdges() != m2.numEdges() ||
+//		m1.numPolygons() != m2.numPolygons())
+//		return false;
+//
+//	MPointArray m1Pts, m2Pts;
+//	m1.getPoints(m1Pts, MSpace::kWorld);
+//	m2.getPoints(m2Pts, MSpace::kWorld);
+//	for (int i = 0; i < m1.numVertices(); i++) {
+//		if (m1Pts[i].x != m2Pts[i].x ||
+//			m1Pts[i].y != m2Pts[i].y ||
+//			m1Pts[i].z != m2Pts[i].z)
+//			return false;
+//	}
+//	return true;
+//}
+
+struct InputClothStruct {
+public:
+	float mass;
+	float kBend;
+	float kStretch;
+	MObject mesh;
+	InputClothStruct(float m, float kB, float kS, MObject inmesh) : mass(m), kBend(kB), kStretch(kS), mesh(inmesh) {}
+	/*bool operator==(const InputClothStruct& input) const {
+		return this->mass == input.mass && kBend == input.kBend && kStretch == input.kStretch && meshesAreIdentical(mesh, input.mesh);
+	}*/
+};
+
 class NexusSolverNode : public MPxNode
 {
 private:
 	uPtr<PBDSolver> solver;
 	std::vector<NexusCloth*> nexusCloths;
+	std::vector<InputClothStruct> prevState;
 
 public:
 	NexusSolverNode() :solver(mkU<PBDSolver>()) {};
