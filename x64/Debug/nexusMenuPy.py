@@ -10,7 +10,10 @@ mc.menuItem(label="Create Nexus Cloth", command="createNexusObject(0)", parent=n
 mc.menuItem(label="Create Nexus Rigidbody", command="createNexusObject(1)", parent=nexusMenu)
 mc.menuItem(label="Attach Vertices to Locator", command="attachVertsToLocator()", parent=nexusMenu)
 mc.menuItem(label="Attach Selected Vertices", command="attachSelectedVertices()", parent=nexusMenu)
-    
+
+mc.currentUnit(time="40fps")
+mc.playbackOptions(loop="once",maxTime=1000)
+
 # int nexusObjectType
 # 0 = cloth
 # 1 = rigidbody
