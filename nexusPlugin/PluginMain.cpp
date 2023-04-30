@@ -59,10 +59,17 @@ MStatus initializePlugin(MObject obj)
     }
 
     // Load Mel GUI files
+    //char buffer[2048];
+    //MString pluginPath = plugin.loadPath();
+    //MString menuPath = MString("source \"") + pluginPath + MString("/nexusMenu.mel\"");
+    //sprintf_s(buffer, 2048, menuPath.asChar(), pluginPath);
+    //MGlobal::executeCommand(buffer, true);
+
+    // Load Python GUI files (we're switching to Python because it's so much better than Mel)
     char buffer[2048];
     MString pluginPath = plugin.loadPath();
-    MString menuPath = MString("source \"") + pluginPath + MString("/nexusMenu.mel\"");
-    sprintf_s(buffer, 2048, menuPath.asChar(), pluginPath);
+    MString menuPath = MString("python(\"exec(open(\\\"") + pluginPath + MString("/nexusMenuPy.py\\\").read())\");");
+    sprintf_s(buffer, 2038, menuPath.asChar(), pluginPath);
     MGlobal::executeCommand(buffer, true);
 
     return status;

@@ -3,6 +3,7 @@
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnNumericAttribute.h>
+#include <maya/MFnCompoundAttribute.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MIntArray.h>
 #include <maya/MFnMesh.h>
@@ -28,7 +29,10 @@ public:
 	MStatus compute(const MPlug& plug, MDataBlock& data) override;
 	static  MStatus initialize();
 
+	static MObject inputMesh;
+	static MObject outputGeometry;
 	static MObject mass;
-	static MObject outMass;
+	static MObject inMass;
+	static MObject rbStruct;
 	static MTypeId id;
 };

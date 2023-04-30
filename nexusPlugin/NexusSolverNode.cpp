@@ -14,6 +14,11 @@
 #include <maya/MGlobal.h>
 
 #include <maya/MIOStream.h>
+#include <nexus/Helper.h>
+
+// DO NOT GET RID OF THIS DEFINE AND INCLUDE FOR VOXELIZER OTHERWISE THINGS WILL BREAK!
+#define VOXELIZER_IMPLEMENTATION
+#include "voxelizer.h"
 
 MTypeId NexusSolverNode::id(0x80000);
 MObject NexusSolverNode::forcesCmpd;
@@ -29,12 +34,18 @@ MObject NexusSolverNode::timeScale;
 MObject NexusSolverNode::outputGeometry;
 
 //Cloth-related
-MObject NexusSolverNode::inClothMeshes;
+MObject NexusSolverNode::inClothStructs;
 MObject NexusSolverNode::inClothMesh;
 MObject NexusSolverNode::inClothMass;
 MObject NexusSolverNode::inClothkStretch;
 MObject NexusSolverNode::inClothkBend;
 MObject NexusSolverNode::outputClothMeshes;
+MObject NexusSolverNode::outputRBMeshes;
+
+// RB related
+MObject NexusSolverNode::inRBStructs;
+MObject NexusSolverNode::inRBMass;
+MObject NexusSolverNode::inRBMesh;
 
 bool InputClothsAreIdentical(InputClothStruct icl1, InputClothStruct icl2) {
 	if (icl1.mass != icl2.mass ||
@@ -60,6 +71,8 @@ bool InputClothsAreIdentical(InputClothStruct icl1, InputClothStruct icl2) {
 	}
 	return true;
 }
+
+
 
 void* NexusSolverNode::creator()
 {
@@ -124,7 +137,7 @@ MStatus NexusSolverNode::initialize()
 	geomAttr.setHidden(true);
 	geomAttr.setUsesArrayDataBuilder(true);
 
-	NexusSolverNode::inClothMeshes = compoundAttr.create("inCloths", "icls", &returnStatus);
+	NexusSolverNode::inClothStructs = compoundAttr.create("inCloths", "icls", &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode Input Cloths attribute\n");
 	returnStatus = compoundAttr.addChild(NexusSolverNode::inClothMass);
 	McheckErr(returnStatus, "ERROR adding child attribute\n");
@@ -136,6 +149,28 @@ MStatus NexusSolverNode::initialize()
 	McheckErr(returnStatus, "ERROR adding child attribute\n");
 	compoundAttr.setArray(true);
 	//compoundAttr.setHidden(true);
+
+	// RB attributes
+	NexusSolverNode::inRBMass = nAttr.create("rbMass", "rbm", MFnNumericData::kDouble, 1.0, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode rbMass attribute\n");
+
+	NexusSolverNode::inRBMesh = geomAttr.create("inRBMesh", "irbm", MFnData::kMesh, MObject::kNullObj, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode input rb mesh attribute\n");
+
+	NexusSolverNode::inRBStructs = compoundAttr.create("inRBs", "irbs", &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode Input RB attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inRBMass);
+	McheckErr(returnStatus, "ERROR adding child inRBMass attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inRBMesh);
+	McheckErr(returnStatus, "ERROR adding child inRBMesh attribute\n");
+	compoundAttr.setArray(true);
+
+	//output array of RB meshes
+	NexusSolverNode::outputRBMeshes = geomAttr.create("outRBs", "orbs", MFnData::kMesh, MObject::kNullObj, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode output rb meshes attribute\n");
+	geomAttr.setArray(true);
+	geomAttr.setHidden(true);
+	geomAttr.setUsesArrayDataBuilder(true);
 
 	// Add attributes to node
 	returnStatus = addAttribute(NexusSolverNode::gravity);
@@ -156,11 +191,17 @@ MStatus NexusSolverNode::initialize()
 	returnStatus = addAttribute(NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
 
-	returnStatus = addAttribute(NexusSolverNode::inClothMeshes);
+	returnStatus = addAttribute(NexusSolverNode::inClothStructs);
 	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
 
 	returnStatus = addAttribute(NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
+
+	returnStatus = addAttribute(NexusSolverNode::inRBStructs);
+	McheckErr(returnStatus, "ERROR adding input RB structs attribute\n");
+
+	returnStatus = addAttribute(NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR adding output RB meshes attribute\n");
 
 	//// Attribute affects (changing attributes should change output)
 	returnStatus = attributeAffects(NexusSolverNode::gravity,
@@ -183,11 +224,15 @@ MStatus NexusSolverNode::initialize()
 		NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR in timeScale attributeAffects\n");
 
-	returnStatus = attributeAffects(NexusSolverNode::inClothMeshes,
+	returnStatus = attributeAffects(NexusSolverNode::inClothStructs,
 		NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
 
-	returnStatus = attributeAffects(NexusSolverNode::inClothMeshes,
+	returnStatus = attributeAffects(NexusSolverNode::inRBStructs,
+		NexusSolverNode::outputGeometry);
+	McheckErr(returnStatus, "ERROR in inRBStructs attributeAffects\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::inClothStructs,
 		NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
 
@@ -195,13 +240,20 @@ MStatus NexusSolverNode::initialize()
 		NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR in timeSep attributeAffects\n");
 
+	returnStatus = attributeAffects(NexusSolverNode::inRBStructs,
+		NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR in inRBStructs attributeAffects\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::timeStep,
+		NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR in inRBStructs attributeAffects\n");
 
 	return MS::kSuccess;
 }
 
 MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& inputOtherPlug, bool asSrc) {
 	MDataBlock data = forceCache();
-	if(affectedPlug == inClothMeshes) {
+	if(affectedPlug == inClothStructs) {
 		//get data from the output attribute of cloth, which is a struct (compound attribute)		
 		int lastIndex = affectedPlug.numElements();
 		MDataHandle handleFromCloth;
@@ -255,6 +307,68 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		//add to solver
 		solver->addObject(std::move(currCloth));
 	}
+	else if (affectedPlug == inRBStructs)
+	{
+		//get data from the output attribute of rb, which is a struct (compound attribute)		
+		int lastIndex = affectedPlug.numElements();
+		MDataHandle rbHandle;
+		inputOtherPlug.getValue(rbHandle);
+		float mass = rbHandle.child(NexusRigidBodyNode::mass).asDouble();
+		MDataHandle mesh = rbHandle.child(NexusRigidBodyNode::outputGeometry);
+
+		//copy the incoming mesh as-is to the last element of outputRBMeshes
+		MStatus returnStatus;
+		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputRBMeshes, &returnStatus);
+		McheckErr(returnStatus, "Couldn't build the output handle for rb meshes\n");
+		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
+		MDataHandle newElement = outputArrayBuilder.addElement(lastIndex);
+		//newElement.jumpToArrayElement(lastIndex);
+		newElement.copy(mesh);
+
+		//add this new rb to the solver
+		uPtr<NexusRigidBody> currRB = mkU<NexusRigidBody>();
+		nexusRBs.push_back(currRB.get());
+		MPointArray ptArr;
+		MIntArray cArr, vArr;
+		MFnMesh inMesh = mesh.asMesh();
+		inMesh.getPoints(ptArr, MSpace::kWorld);
+		inMesh.getTriangles(cArr, vArr);
+
+		std::vector<vec3> verts;
+		for (int i = 0; i < ptArr.length(); i++)
+		{
+			verts.push_back(vec3(ptArr[i].x, ptArr[i].y, ptArr[i].z));
+			//std::string s = "(" + std::to_string(ptArr[i].x) + ", " + std::to_string(ptArr[i].y) + ", " + std::to_string(ptArr[i].z) + ")";
+			//MGlobal::displayInfo(MString(s.c_str()));
+		}
+
+		//MGlobal::displayInfo(MString("============= INDICES ============="));
+
+		std::vector<int> indices;
+		for (int i = 0; i < vArr.length(); i++)
+		{
+			indices.push_back(vArr[i]);
+			//std::string s = std::to_string(vArr[i]);
+			//MGlobal::displayInfo(MString(s.c_str()));
+		}
+
+		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, FIXED_PARTICLE_SIZE, FIXED_PARTICLE_SIZE, FIXED_PARTICLE_SIZE, 0.1f);
+
+		float particleMass = mass / voxelizedMesh->nvertices;
+
+		std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
+		MGlobal::displayInfo(MString(s.c_str()));
+
+		for (int i = 0; i < voxelizedMesh->nvertices; i++)
+		{
+			vx_vertex_t v = voxelizedMesh->vertices[i];
+			vec3 pos = vec3(v.x, v.y, v.z);
+			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), NexusRigidBody::getObjectID(), particleMass, FIXED_PARTICLE_SIZE);
+			currRB->addParticle(std::move(p));
+		}
+
+		solver->addObject(std::move(currRB));
+	}
 	return MPxNode::connectionMade(affectedPlug, inputOtherPlug, asSrc);
 }
 
@@ -269,7 +383,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 	}
 	else if (plug == outputClothMeshes) {
 		//check if the input cloths have changed from the previous state or not. If they have, we reset the solver
-		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
+		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothStructs);
 		//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
 		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
@@ -316,6 +430,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 		MGlobal::displayInfo("Resetting the solver");
 		solver = mkU<PBDSolver>();
 		nexusCloths.clear();
+		nexusRBs.clear();
 	}
 
 	if (instancedRendering) {
@@ -338,7 +453,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 	}
 	else
 	{
-		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
+		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothStructs);
 		//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
 		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
@@ -404,6 +519,85 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 			outputArrayHandle.jumpToArrayElement(i);
 			outputArrayHandle.outputValue().setMObject(newMeshObj);
 
+		}
+
+		MArrayDataHandle rbsInArray = data.inputArrayValue(inRBStructs);
+		outputArrayHandle = data.outputArrayValue(outputRBMeshes, &returnStatus);
+		outputArrayBuilder = outputArrayHandle.builder();
+
+		for (uint i = 0; i < rbsInArray.elementCount(); i++)
+		{
+			rbsInArray.jumpToArrayElement(i);
+			MDataHandle rbElement = rbsInArray.inputValue();
+			float mass = rbElement.child(inRBMesh).asDouble();
+			MFnMesh mesh = rbElement.child(inRBMesh).asMesh();
+
+			MPointArray ptArr;
+			MPointArray outPtArr;
+			mesh.getPoints(ptArr, MSpace::kWorld);
+
+			if (resetSolver)
+			{
+				//add this new rb to the solver
+				uPtr<NexusRigidBody> currRB = mkU<NexusRigidBody>();
+				nexusRBs.push_back(currRB.get());
+				MPointArray ptArr;
+				MIntArray cArr, vArr;
+				mesh.getPoints(ptArr, MSpace::kWorld);
+				mesh.getVertices(cArr, vArr);
+
+				std::vector<vec3> verts;
+				for (int i = 0; i < ptArr.length(); i++)
+				{
+					verts.push_back(vec3(ptArr[i].x, ptArr[i].y, ptArr[i].z));
+					//std::string s = "(" + std::to_string(ptArr[i].x) + ", " + std::to_string(ptArr[i].y) + ", " + std::to_string(ptArr[i].z) + ")";
+					//MGlobal::displayInfo(MString(s.c_str()));
+				}
+
+				//MGlobal::displayInfo(MString("============= INDICES ============="));
+
+				std::vector<int> indices;
+				for (int i = 0; i < vArr.length(); i++)
+				{
+					indices.push_back(vArr[i]);
+					//std::string s = std::to_string(vArr[i]);
+					//MGlobal::displayInfo(MString(s.c_str()));
+				}
+
+				vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 1.0f, 1.0f, 1.0f, 0.1f);
+
+				float particleMass = mass / voxelizedMesh->nvertices;
+
+				std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
+				MGlobal::displayInfo(MString(s.c_str()));
+
+				for (int i = 0; i < voxelizedMesh->nvertices; i++)
+				{
+					vx_vertex_t v = voxelizedMesh->vertices[i];
+					vec3 pos = vec3(v.x, v.y, v.z);
+					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), NexusRigidBody::getObjectID(), particleMass, FIXED_PARTICLE_SIZE);
+					currRB->addParticle(std::move(p));
+				}
+
+				solver->addObject(std::move(currRB));
+			}
+			else
+			{
+				for (int j = 0; j < ptArr.length(); j++) {
+					glm::vec3 newPos = nexusRBs[i]->getMovedVertices()[j];
+					MPoint pt(newPos.x, newPos.y, newPos.z);
+					outPtArr.append(pt);
+				}
+			}
+
+			MFnMesh outMesh;
+			MFnMeshData meshDataFn;
+			MObject newMeshObj = meshDataFn.create();
+			outMesh.copy(rbElement.child(inClothMesh).asMesh(), newMeshObj);
+			outMesh.setPoints(outPtArr);
+			outMesh.setObject(newMeshObj);
+			outputArrayHandle.jumpToArrayElement(i);
+			outputArrayHandle.outputValue().setMObject(newMeshObj);
 		}
 	}
 	data.setClean(plug);
