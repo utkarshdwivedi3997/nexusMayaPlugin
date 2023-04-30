@@ -321,7 +321,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 			//MGlobal::displayInfo(MString(s.c_str()));
 		}
 
-		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 5.0f, 5.0f, 5.0f, 5.0f);
+		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 5.0f, 5.0f, 5.0f, 0.1f);
 
 		float particleMass = mass / voxelizedMesh->nvertices;
 
