@@ -117,13 +117,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;NT_PLUGIN;REQUIRE_IOSTREAM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Nexus\3rdparty\eigen-3.2.8;$(SolutionDir)\Nexus\3rdparty\glm;$(SolutionDir)\Nexus\src;$(SolutionDir)\Nexus\3rdparty\voxelizer;%MAYA_LOCATION%\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Nexus\3rdparty\eigen-3.2.8;$(SolutionDir)Nexus\3rdparty\glm;$(SolutionDir)Nexus\src;.;%MAYA_LOCATION%\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(ProjectName).mll</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)\Nexus\Debug;%MAYA_LOCATION%\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Nexus\Debug;%MAYA_LOCATION%\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Foundation.lib; OpenMaya.lib; OpenMayaUI.lib; OpenMayaAnim.lib; OpenMayaFX.lib; OpenMayaRender.lib; Image.lib; opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/export:initializePlugin /export:uninitializePlugin %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -149,6 +149,7 @@
     <ClInclude Include="NexusCommand.h" />
     <ClInclude Include="NexusRigidBodyNode.h" />
     <ClInclude Include="NexusSolverNode.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NexusClothNode.cpp" />
@@ -161,6 +162,9 @@
     <ProjectReference Include="..\Nexus\build\nexus.vcxproj">
       <Project>{72197f1d-065f-3162-992b-b3a6c488c601}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="nexusPlugin.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

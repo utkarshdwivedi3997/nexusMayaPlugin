@@ -47,6 +47,32 @@ MObject NexusSolverNode::inRBStructs;
 MObject NexusSolverNode::inRBMass;
 MObject NexusSolverNode::inRBMesh;
 
+bool InputClothsAreIdentical(InputClothStruct icl1, InputClothStruct icl2) {
+	if (icl1.mass != icl2.mass ||
+		icl1.kBend != icl2.kBend ||
+		icl1.kStretch != icl2.kStretch)
+		return false;
+
+	MFnMesh m1(icl1.mesh);
+	MFnMesh m2(icl2.mesh);
+	if (m1.numVertices() != m2.numVertices() ||
+		m1.numEdges() != m2.numEdges() ||
+		m1.numPolygons() != m2.numPolygons())
+		return false;
+
+	MPointArray m1Pts, m2Pts;
+	m1.getPoints(m1Pts, MSpace::kWorld);
+	m2.getPoints(m2Pts, MSpace::kWorld);
+	for (int i = 0; i < m1.numVertices(); i++) {
+		if (m1Pts[i].x != m2Pts[i].x ||
+			m1Pts[i].y != m2Pts[i].y ||
+			m1Pts[i].z != m2Pts[i].z)
+			return false;
+	}
+	return true;
+}
+
+
 
 void* NexusSolverNode::creator()
 {
@@ -237,6 +263,8 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		float mass = handleFromCloth.child(NexusClothNode::mass).asDouble();
 		MDataHandle mesh = handleFromCloth.child(NexusClothNode::outputGeometry);
 
+		prevState.push_back(InputClothStruct(mass, kStretch, kBend, mesh.asMesh()));
+
 		//copy the incoming mesh as-is to the last element of outputClothMeshes
 		MStatus returnStatus;
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
@@ -271,6 +299,9 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		}
 
 		//bending constraints
+		/*MItMeshPolygon polyIter(mesh.asMesh());
+		for (; !polyIter.isDone(); polyIter.next()) {
+		}*/
 
 
 		//add to solver
@@ -346,16 +377,40 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 	MStatus returnStatus = MStatus::kSuccess;
 	bool resetSolver = false;
 	bool instancedRendering = false;
-
-	if (plug == inClothStructs || plug == inRBStructs) {
-		resetSolver = true;
-	}
 	
 	if (plug == outputGeometry) {
 		instancedRendering = true;
 	}
 	else if (plug == outputClothMeshes) {
-		//MGlobal::displayInfo(MString("Resetting the solver."));
+		//check if the input cloths have changed from the previous state or not. If they have, we reset the solver
+		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
+		//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
+		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
+		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
+
+		if (clothsInArray.elementCount() != prevState.size()) { //if now we added or deleted a mesh, we need to reset the solver state
+			resetSolver = true;
+		}
+		for (uint i = 0; i < clothsInArray.elementCount(); i++) {
+			clothsInArray.jumpToArrayElement(i);
+			MDataHandle clothElement = clothsInArray.inputValue();
+			float kStretch = clothElement.child(inClothkStretch).asDouble();
+			float kBend = clothElement.child(inClothkBend).asDouble();
+			float mass = clothElement.child(inClothMass).asDouble();
+			MObject mesh = clothElement.child(inClothMesh).asMesh();
+
+			InputClothStruct currIcl(mass, kStretch, kBend, mesh);
+			//if meshes were added or deleted
+			if (i >= prevState.size()) {
+				resetSolver = true;
+				prevState.push_back(currIcl);
+			}
+			//check if existing meshes are identical
+			else if (!InputClothsAreIdentical(currIcl, prevState[i])) {
+				resetSolver = true;
+				prevState[i] = currIcl;
+			}
+		}
 	}
 	else if (plug == timeStep) {
 		if (MAnimControl::isPlaying()) {
@@ -372,6 +427,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 	}
 
 	if (resetSolver) {
+		MGlobal::displayInfo("Resetting the solver");
 		solver = mkU<PBDSolver>();
 		nexusCloths.clear();
 		nexusRBs.clear();
