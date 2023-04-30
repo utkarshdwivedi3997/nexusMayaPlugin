@@ -290,7 +290,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		}
 
 		//stretching constraints
-		for (uint e = 0; e < inMesh.numEdges(); e++) {
+		for (unsigned int e = 0; e < inMesh.numEdges(); e++) {
 			int2 vertdIds;
 			inMesh.getEdgeVertices(e, vertdIds);
 			Particle* p1 = currCloth.get()->getParticles().at(vertdIds[0]).get();
@@ -352,18 +352,19 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 			//MGlobal::displayInfo(MString(s.c_str()));
 		}
 
-		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, FIXED_PARTICLE_SIZE, FIXED_PARTICLE_SIZE, FIXED_PARTICLE_SIZE, 0.1f);
+		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 0.1f, 0.25f, 0.25f, 0.1f);
 
 		float particleMass = mass / voxelizedMesh->nvertices;
 
 		std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
 		MGlobal::displayInfo(MString(s.c_str()));
 
+		int objId = NexusRigidBody::getObjectID();
 		for (int i = 0; i < voxelizedMesh->nvertices; i++)
 		{
 			vx_vertex_t v = voxelizedMesh->vertices[i];
 			vec3 pos = vec3(v.x, v.y, v.z);
-			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), NexusRigidBody::getObjectID(), particleMass, FIXED_PARTICLE_SIZE);
+			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), objId, particleMass, FIXED_PARTICLE_SIZE);
 			currRB->addParticle(std::move(p));
 		}
 
@@ -391,7 +392,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 		if (clothsInArray.elementCount() != prevState.size()) { //if now we added or deleted a mesh, we need to reset the solver state
 			resetSolver = true;
 		}
-		for (uint i = 0; i < clothsInArray.elementCount(); i++) {
+		for (unsigned int i = 0; i < clothsInArray.elementCount(); i++) {
 			clothsInArray.jumpToArrayElement(i);
 			MDataHandle clothElement = clothsInArray.inputValue();
 			float kStretch = clothElement.child(inClothkStretch).asDouble();
@@ -458,7 +459,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
 		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
 
-		for (uint i = 0; i < clothsInArray.elementCount(); i++) {
+		for (unsigned int i = 0; i < clothsInArray.elementCount(); i++) {
 			clothsInArray.jumpToArrayElement(i);
 			MDataHandle clothElement = clothsInArray.inputValue();
 			float kStretch = clothElement.child(inClothkStretch).asDouble();
@@ -487,7 +488,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 					c++;
 				}
 				//stretching constraints
-				for (uint e = 0; e < mesh.numEdges(); e++) {
+				for (unsigned int e = 0; e < mesh.numEdges(); e++) {
 					int2 vertdIds;
 					mesh.getEdgeVertices(e, vertdIds);
 					Particle* p1 = currCloth.get()->getParticles().at(vertdIds[0]).get();
@@ -525,7 +526,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 		outputArrayHandle = data.outputArrayValue(outputRBMeshes, &returnStatus);
 		outputArrayBuilder = outputArrayHandle.builder();
 
-		for (uint i = 0; i < rbsInArray.elementCount(); i++)
+		for (unsigned int i = 0; i < rbsInArray.elementCount(); i++)
 		{
 			rbsInArray.jumpToArrayElement(i);
 			MDataHandle rbElement = rbsInArray.inputValue();
@@ -564,18 +565,19 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 					//MGlobal::displayInfo(MString(s.c_str()));
 				}
 
-				vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 1.0f, 1.0f, 1.0f, 0.1f);
+				vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 0.25f, 0.25f, 0.25f, 0.1f);
 
 				float particleMass = mass / voxelizedMesh->nvertices;
 
 				std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
 				MGlobal::displayInfo(MString(s.c_str()));
+				int objId = NexusRigidBody::getObjectID();
 
 				for (int i = 0; i < voxelizedMesh->nvertices; i++)
 				{
 					vx_vertex_t v = voxelizedMesh->vertices[i];
 					vec3 pos = vec3(v.x, v.y, v.z);
-					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), NexusRigidBody::getObjectID(), particleMass, FIXED_PARTICLE_SIZE);
+					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), objId, particleMass, FIXED_PARTICLE_SIZE);
 					currRB->addParticle(std::move(p));
 				}
 
