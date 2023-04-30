@@ -12,8 +12,11 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MFnMeshData.h>
+#include <maya/MDagPath.h>
+#include <maya/MItMeshEdge.h>
 #include <maya/MIOStream.h>
 #include <nexus/PBDSolver.h>
+#include <nexus/NexusCloth.h>
 #include <maya/MFnVectorArrayData.h>
 #include<maya/MFnArrayAttrsData.h>
 #include<maya/MArrayDataBuilder.h>
@@ -30,12 +33,13 @@ class NexusSolverNode : public MPxNode
 {
 private:
 	uPtr<PBDSolver> solver;
-	MTime m_lastTime;
+	std::vector<NexusCloth*> nexusCloths;
 
 public:
-	NexusSolverNode() :solver(mkU<PBDSolver>()), m_lastTime(0.f) {};
+	NexusSolverNode() :solver(mkU<PBDSolver>()) {};
 	~NexusSolverNode() override {};
 	MStatus compute(const MPlug& plug, MDataBlock& data) override;
+	MStatus connectionMade(const MPlug& affectedPlug, const MPlug& inputOtherPlug, bool asSrc) override;
 	static  void* creator();
 	static  MStatus initialize();
 	//MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
