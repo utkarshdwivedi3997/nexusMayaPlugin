@@ -332,7 +332,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		MIntArray cArr, vArr;
 		MFnMesh inMesh = mesh.asMesh();
 		inMesh.getPoints(ptArr, MSpace::kWorld);
-		inMesh.getVertices(cArr, vArr);
+		inMesh.getTriangles(cArr, vArr);
 
 		std::vector<vec3> verts;
 		for (int i = 0; i < ptArr.length(); i++)
@@ -383,7 +383,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 	}
 	else if (plug == outputClothMeshes) {
 		//check if the input cloths have changed from the previous state or not. If they have, we reset the solver
-		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
+		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothStructs);
 		//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
 		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
