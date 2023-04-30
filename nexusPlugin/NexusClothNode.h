@@ -27,10 +27,9 @@
 class NexusClothNode : public MPxNode
 {
 public:
-	NexusClothNode();
+	NexusClothNode() {};
 	~NexusClothNode() override {};
 	MStatus compute(const MPlug& plug, MDataBlock& data) override;
-	//MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
 
 	static void* creator();
 	static MStatus initialize();
@@ -49,5 +48,4 @@ public:
 	static MObject inKbend;
 	static MObject clothStruct;
 	static MTypeId id;
-	//static MObject inClothMeshes;
 };
