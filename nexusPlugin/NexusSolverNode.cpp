@@ -160,12 +160,16 @@ MStatus NexusSolverNode::initialize()
 	McheckErr(returnStatus, "ERROR in timeScale attributeAffects\n");
 
 	returnStatus = attributeAffects(NexusSolverNode::inClothMeshes,
+		NexusSolverNode::outputGeometry);
+	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::inClothMeshes,
 		NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
 
-	returnStatus = attributeAffects(NexusSolverNode::inClothMass,
+	returnStatus = attributeAffects(NexusSolverNode::timeStep,
 		NexusSolverNode::outputClothMeshes);
-	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
+	McheckErr(returnStatus, "ERROR in timeSep attributeAffects\n");
 
 
 	return MS::kSuccess;
@@ -199,14 +203,22 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		MFnMesh inMesh = mesh.asMesh();
 		inMesh.getPoints(ptArr, MSpace::kWorld);
 		float particlesMass = mass / inMesh.numVertices();
+		int c = 0;
 		for (auto& pt : ptArr) {
 			glm::vec3 pos(pt.x, pt.y, pt.z);
-			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), 0, particlesMass);
+			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), 0, (c == 0 || c == 30) ? -1: particlesMass);
 			currCloth->addParticle(std::move(p));
+			c++;
 		}
 
 		//stretching constraints
-
+		for (uint e = 0; e < inMesh.numEdges(); e++) {
+			int2 vertdIds;
+			inMesh.getEdgeVertices(e, vertdIds);
+			Particle* p1 = currCloth.get()->getParticles().at(vertdIds[0]).get();
+			Particle* p2 = currCloth.get()->getParticles().at(vertdIds[1]).get();
+			currCloth.get()->addStretchConstraint(p1, p2, glm::distance(p1->x, p2->x), kStretch);
+		}
 
 		//bending constraints
 
@@ -214,128 +226,131 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		//add to solver
 		solver->addObject(std::move(currCloth));
 	}
-	if (affectedPlug == outputClothMeshes) {
-		MGlobal::displayInfo(MString("output is other"));
-	}
 	return MPxNode::connectionMade(affectedPlug, inputOtherPlug, asSrc);
 }
 
 MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 {
 	MStatus returnStatus = MStatus::kSuccess;
-	//MGlobal::displayInfo(MString("At least solver's compute got called huh. Plug Name : ") + plug.name());
 	bool resetSolver = false;
 	bool instancedRendering = false;
 
-	if (plug == outputClothMeshes) {
+	if (plug == inClothMeshes) {
 		resetSolver = true;
 	}
-	else if (plug == outputGeometry) {
+	
+	if (plug == outputGeometry) {
 		instancedRendering = true;
+	}
+	else if (plug == outputClothMeshes) {
+		//MGlobal::displayInfo(MString("Resetting the solver."));
+	}
+	else if (plug == timeStep) {
+		if (MAnimControl::isPlaying()) {
+			MTime mfps(1, MTime::kSeconds);
+			double fps = mfps.asUnits(MTime::uiUnit());
+			double deltaT = 1.f / fps;
+			solver->update(deltaT);
+		}
+		data.setClean(plug);
+		return MStatus::kSuccess;
 	}
 	else {
 		return MStatus::kUnknownParameter;
 	}
 
-	//Output handle
-	MDataHandle outputGeometryHandle = data.outputValue(outputGeometry, &returnStatus);
-	McheckErr(returnStatus, "ERROR getting geometry data handle\n");
-	MFnArrayAttrsData outputArrayData;
-	MVectorArray outputArray;
-
-	MObject outputArrayObj = outputArrayData.create(&returnStatus);
-	McheckErr(returnStatus, "ERROR setting up the output array for positions from the solver.\n");
-
 	if (resetSolver) {
 		solver = mkU<PBDSolver>();
 		nexusCloths.clear();
 	}
-	else {
-		//solve
-		MTime currentTime = MAnimControl::currentTime();
-		if (!MAnimControl::isPlaying()) {
-			data.setClean(plug);
-			return MStatus::kSuccess;		
-		}
-		MTime mfps(1, MTime::kSeconds);
-		double fps = mfps.asUnits(MTime::uiUnit());
-		
-		MGlobal::displayInfo("My Beautiful Frame Rate: ");
-		MGlobal::displayInfo(MString() + fps);
-		
-		double deltaT = 1.f / fps;
-		solver->update(deltaT);
-		if (instancedRendering) {
-			for (auto& obj : solver->getObjects()) {
-				for (auto& p : obj->getParticles()) {
-					outputArray.append(MVector(p->x.x, p->x.y, p->x.z));
-				}
+
+	if (instancedRendering) {
+		//Output handle
+		MDataHandle outputGeometryHandle = data.outputValue(outputGeometry, &returnStatus);
+		McheckErr(returnStatus, "ERROR getting geometry data handle\n");
+		MFnArrayAttrsData outputArrayData;
+		MVectorArray outputArray;
+
+		MObject outputArrayObj = outputArrayData.create(&returnStatus);
+		McheckErr(returnStatus, "ERROR setting up the output array for positions from the solver.\n");
+
+		for (auto& obj : solver->getObjects()) {
+			for (auto& p : obj->getParticles()) {
+				outputArray.append(MVector(p->x.x, p->x.y, p->x.z));
 			}
 		}
-		m_lastTime = currentTime;
-	}
-
-	MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
-	//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
-	MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
-	MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
-
-	for (uint i = 0; i < clothsInArray.elementCount(); i++) {
-		clothsInArray.jumpToArrayElement(i);
-		MDataHandle clothElement = clothsInArray.inputValue();
-		float kStretch = clothElement.child(inClothkStretch).asDouble();
-		float kBend = clothElement.child(inClothkBend).asDouble();
-		float mass = clothElement.child(inClothMass).asDouble();
-		MFnMesh mesh = clothElement.child(inClothMesh).asMesh();
-
-		MPointArray ptArr;
-		MPointArray outPtArr;
-		mesh.getPoints(ptArr, MSpace::kWorld);
-		//MMatrix m = meshFn.transformationMatrix(&returnStatus);
-		//MMatrix m2 = path.inclusiveMatrix();
-
-		//if resetting the solver, need to set up the constraints again
-		if (resetSolver) {
-			uPtr<NexusCloth> currCloth = mkU<NexusCloth>();
-			nexusCloths.push_back(currCloth.get());
-			for (auto& pt : ptArr) {
-				glm::vec3 pos(pt.x, pt.y, pt.z);
-				float particleMass = mass / mesh.numVertices();
-				uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), 0, particleMass);
-				currCloth->addParticle(std::move(p));				
-				outPtArr.append(pt);
-			}
-			//stretching constraints
-
-
-			//bending constraints
-
-
-			//add to solver
-			solver->addObject(std::move(currCloth));
-		}
-		//otherwise if not resetting the solver, just update the mesh vertex positions
-		else {
-			for(int j = 0; j < ptArr.length(); j++) { 
-				glm::vec3 newPos = nexusCloths[i]->getParticles().at(j).get()->x + glm::vec3(0,0.1,0);
-				MPoint pt(newPos.x, newPos.y, newPos.z);
-				outPtArr.append(pt);
-			}
-		}
-		
-		MFnMesh outMesh;
-		MFnMeshData meshDataFn;
-		MObject newMeshObj = meshDataFn.create();
-		outMesh.copy(clothElement.child(inClothMesh).asMesh(), newMeshObj);
-		outMesh.setPoints(outPtArr);
-		outMesh.setObject(newMeshObj);
-		outputArrayHandle.jumpToArrayElement(i);
-		outputArrayHandle.outputValue().setMObject(newMeshObj);
-
-	}
-	if (!resetSolver) {
 		outputArrayData.vectorArray("position") = outputArray;
 		outputGeometryHandle.set(outputArrayData.object());
+	}
+	else
+	{
+		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
+		//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
+		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
+		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
+
+		for (uint i = 0; i < clothsInArray.elementCount(); i++) {
+			clothsInArray.jumpToArrayElement(i);
+			MDataHandle clothElement = clothsInArray.inputValue();
+			float kStretch = clothElement.child(inClothkStretch).asDouble();
+			float kBend = clothElement.child(inClothkBend).asDouble();
+			float mass = clothElement.child(inClothMass).asDouble();
+			MFnMesh mesh = clothElement.child(inClothMesh).asMesh();
+
+			MPointArray ptArr;
+			MPointArray outPtArr;
+			mesh.getPoints(ptArr, MSpace::kWorld);
+			//MMatrix m = meshFn.transformationMatrix(&returnStatus);
+			//MMatrix m2 = path.inclusiveMatrix();
+
+			//if resetting the solver, need to set up the constraints again
+			if (resetSolver) {
+				int c = 0;
+				uPtr<NexusCloth> currCloth = mkU<NexusCloth>();
+				nexusCloths.push_back(currCloth.get());
+				for (auto& pt : ptArr) {					
+					glm::vec3 pos(pt.x, pt.y, pt.z);
+					float particleMass = mass / mesh.numVertices();
+					if (c == 0 || c == 30) particleMass = -1;
+					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), 0, particleMass);
+					currCloth->addParticle(std::move(p));
+					outPtArr.append(pt);
+					c++;
+				}
+				//stretching constraints
+				for (uint e = 0; e < mesh.numEdges(); e++) {
+					int2 vertdIds;
+					mesh.getEdgeVertices(e, vertdIds);
+					Particle* p1 = currCloth.get()->getParticles().at(vertdIds[0]).get();
+					Particle* p2 = currCloth.get()->getParticles().at(vertdIds[1]).get();
+					currCloth.get()->addStretchConstraint(p1, p2, glm::distance(p1->x, p2->x), kStretch);
+				}
+
+				//bending constraints
+
+
+				//add to solver
+				solver->addObject(std::move(currCloth));
+			}
+			//otherwise if not resetting the solver, just update the mesh vertex positions
+			else {
+				for (int j = 0; j < ptArr.length(); j++) {
+					glm::vec3 newPos = nexusCloths[i]->getParticles().at(j).get()->x;
+					MPoint pt(newPos.x, newPos.y, newPos.z);
+					outPtArr.append(pt);
+				}
+			}
+
+			MFnMesh outMesh;
+			MFnMeshData meshDataFn;
+			MObject newMeshObj = meshDataFn.create();
+			outMesh.copy(clothElement.child(inClothMesh).asMesh(), newMeshObj);
+			outMesh.setPoints(outPtArr);
+			outMesh.setObject(newMeshObj);
+			outputArrayHandle.jumpToArrayElement(i);
+			outputArrayHandle.outputValue().setMObject(newMeshObj);
+
+		}
 	}
 	data.setClean(plug);
 	return MS::kSuccess;
