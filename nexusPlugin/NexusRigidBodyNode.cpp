@@ -1,9 +1,9 @@
-#include <NexusRigidBodyNode.h>
 #include <fstream>
 #include <sstream>
 #include <vector>
 
 #include <maya/MGlobal.h>
+#include "NexusRigidBodyNode.h"
 
 void* NexusRigidBodyNode::creator()
 {

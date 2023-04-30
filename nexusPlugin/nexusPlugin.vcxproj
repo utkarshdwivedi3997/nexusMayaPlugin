@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;NT_PLUGIN;REQUIRE_IOSTREAM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Nexus\3rdparty\eigen-3.2.8;$(SolutionDir)\Nexus\3rdparty\glm;$(SolutionDir)\Nexus\src;.;%MAYA_LOCATION%\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Nexus\3rdparty\eigen-3.2.8;$(SolutionDir)\Nexus\3rdparty\glm;$(SolutionDir)\Nexus\src;$(SolutionDir)\Nexus\3rdparty\voxelizer;%MAYA_LOCATION%\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

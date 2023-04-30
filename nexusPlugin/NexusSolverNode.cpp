@@ -14,6 +14,11 @@
 #include <maya/MGlobal.h>
 
 #include <maya/MIOStream.h>
+#include <nexus/Helper.h>
+
+// DO NOT GET RID OF THIS DEFINE AND INCLUDE FOR VOXELIZER OTHERWISE THINGS WILL BREAK!
+#define VOXELIZER_IMPLEMENTATION
+#include "voxelizer.h"
 
 MTypeId NexusSolverNode::id(0x80000);
 MObject NexusSolverNode::forcesCmpd;
@@ -270,6 +275,68 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 
 		//add to solver
 		solver->addObject(std::move(currCloth));
+	}
+	else if (affectedPlug == inRBStructs)
+	{
+		//get data from the output attribute of rb, which is a struct (compound attribute)		
+		int lastIndex = affectedPlug.numElements();
+		MDataHandle rbHandle;
+		inputOtherPlug.getValue(rbHandle);
+		float mass = rbHandle.child(NexusRigidBodyNode::mass).asDouble();
+		MDataHandle mesh = rbHandle.child(NexusRigidBodyNode::outputGeometry);
+
+		//copy the incoming mesh as-is to the last element of outputRBMeshes
+		MStatus returnStatus;
+		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputRBMeshes, &returnStatus);
+		McheckErr(returnStatus, "Couldn't build the output handle for rb meshes\n");
+		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();
+		MDataHandle newElement = outputArrayBuilder.addElement(lastIndex);
+		//newElement.jumpToArrayElement(lastIndex);
+		newElement.copy(mesh);
+
+		//add this new rb to the solver
+		uPtr<NexusRigidBody> currRB = mkU<NexusRigidBody>();
+		nexusRBs.push_back(currRB.get());
+		MPointArray ptArr;
+		MIntArray cArr, vArr;
+		MFnMesh inMesh = mesh.asMesh();
+		inMesh.getPoints(ptArr, MSpace::kWorld);
+		inMesh.getVertices(cArr, vArr);
+
+		std::vector<vec3> verts;
+		for (int i = 0; i < ptArr.length(); i++)
+		{
+			verts.push_back(vec3(ptArr[i].x, ptArr[i].y, ptArr[i].z));
+			//std::string s = "(" + std::to_string(ptArr[i].x) + ", " + std::to_string(ptArr[i].y) + ", " + std::to_string(ptArr[i].z) + ")";
+			//MGlobal::displayInfo(MString(s.c_str()));
+		}
+
+		//MGlobal::displayInfo(MString("============= INDICES ============="));
+
+		std::vector<int> indices;
+		for (int i = 0; i < vArr.length(); i++)
+		{
+			indices.push_back(vArr[i]);
+			//std::string s = std::to_string(vArr[i]);
+			//MGlobal::displayInfo(MString(s.c_str()));
+		}
+
+		vx_mesh_t* voxelizedMesh = Helper::Voxelize(verts, indices, 5.0f, 5.0f, 5.0f, 5.0f);
+
+		float particleMass = mass / voxelizedMesh->nvertices;
+
+		std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
+		MGlobal::displayInfo(MString(s.c_str()));
+
+		for (int i = 0; i < voxelizedMesh->nvertices; i++)
+		{
+			vx_vertex_t v = voxelizedMesh->vertices[i];
+			vec3 pos = vec3(v.x, v.y, v.z);
+			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), NexusRigidBody::getObjectID(), particleMass, FIXED_PARTICLE_SIZE);
+			currRB->addParticle(std::move(p));
+		}
+
+		solver->addObject(std::move(currRB));
 	}
 	return MPxNode::connectionMade(affectedPlug, inputOtherPlug, asSrc);
 }
