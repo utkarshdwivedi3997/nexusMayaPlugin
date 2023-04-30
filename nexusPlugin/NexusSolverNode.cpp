@@ -29,12 +29,18 @@ MObject NexusSolverNode::timeScale;
 MObject NexusSolverNode::outputGeometry;
 
 //Cloth-related
-MObject NexusSolverNode::inClothMeshes;
+MObject NexusSolverNode::inClothStructs;
 MObject NexusSolverNode::inClothMesh;
 MObject NexusSolverNode::inClothMass;
 MObject NexusSolverNode::inClothkStretch;
 MObject NexusSolverNode::inClothkBend;
 MObject NexusSolverNode::outputClothMeshes;
+MObject NexusSolverNode::outputRBMeshes;
+
+// RB related
+MObject NexusSolverNode::inRBStructs;
+MObject NexusSolverNode::inRBMass;
+MObject NexusSolverNode::inRBMesh;
 
 
 void* NexusSolverNode::creator()
@@ -100,7 +106,7 @@ MStatus NexusSolverNode::initialize()
 	geomAttr.setHidden(true);
 	geomAttr.setUsesArrayDataBuilder(true);
 
-	NexusSolverNode::inClothMeshes = compoundAttr.create("inCloths", "icls", &returnStatus);
+	NexusSolverNode::inClothStructs = compoundAttr.create("inCloths", "icls", &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode Input Cloths attribute\n");
 	returnStatus = compoundAttr.addChild(NexusSolverNode::inClothMass);
 	McheckErr(returnStatus, "ERROR adding child attribute\n");
@@ -112,6 +118,28 @@ MStatus NexusSolverNode::initialize()
 	McheckErr(returnStatus, "ERROR adding child attribute\n");
 	compoundAttr.setArray(true);
 	//compoundAttr.setHidden(true);
+
+	// RB attributes
+	NexusSolverNode::inRBMass = nAttr.create("rbMass", "rbm", MFnNumericData::kDouble, 1.0, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode rbMass attribute\n");
+
+	NexusSolverNode::inRBMesh = geomAttr.create("inRBMesh", "irbm", MFnData::kMesh, MObject::kNullObj, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode input rb mesh attribute\n");
+
+	NexusSolverNode::inRBStructs = compoundAttr.create("inRBs", "irbs", &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode Input RB attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inRBMass);
+	McheckErr(returnStatus, "ERROR adding child inRBMass attribute\n");
+	returnStatus = compoundAttr.addChild(NexusSolverNode::inRBMesh);
+	McheckErr(returnStatus, "ERROR adding child inRBMesh attribute\n");
+	compoundAttr.setArray(true);
+
+	//output array of RB meshes
+	NexusSolverNode::outputRBMeshes = geomAttr.create("outRBs", "orbs", MFnData::kMesh, MObject::kNullObj, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode output rb meshes attribute\n");
+	geomAttr.setArray(true);
+	geomAttr.setHidden(true);
+	geomAttr.setUsesArrayDataBuilder(true);
 
 	// Add attributes to node
 	returnStatus = addAttribute(NexusSolverNode::gravity);
@@ -132,11 +160,17 @@ MStatus NexusSolverNode::initialize()
 	returnStatus = addAttribute(NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
 
-	returnStatus = addAttribute(NexusSolverNode::inClothMeshes);
+	returnStatus = addAttribute(NexusSolverNode::inClothStructs);
 	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
 
 	returnStatus = addAttribute(NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR adding output geometry attribute\n");
+
+	returnStatus = addAttribute(NexusSolverNode::inRBStructs);
+	McheckErr(returnStatus, "ERROR adding input RB structs attribute\n");
+
+	returnStatus = addAttribute(NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR adding output RB meshes attribute\n");
 
 	//// Attribute affects (changing attributes should change output)
 	returnStatus = attributeAffects(NexusSolverNode::gravity,
@@ -159,11 +193,15 @@ MStatus NexusSolverNode::initialize()
 		NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR in timeScale attributeAffects\n");
 
-	returnStatus = attributeAffects(NexusSolverNode::inClothMeshes,
+	returnStatus = attributeAffects(NexusSolverNode::inClothStructs,
 		NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
 
-	returnStatus = attributeAffects(NexusSolverNode::inClothMeshes,
+	returnStatus = attributeAffects(NexusSolverNode::inRBStructs,
+		NexusSolverNode::outputGeometry);
+	McheckErr(returnStatus, "ERROR in inRBStructs attributeAffects\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::inClothStructs,
 		NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR in inClothMeshes attributeAffects\n");
 
@@ -171,13 +209,20 @@ MStatus NexusSolverNode::initialize()
 		NexusSolverNode::outputClothMeshes);
 	McheckErr(returnStatus, "ERROR in timeSep attributeAffects\n");
 
+	returnStatus = attributeAffects(NexusSolverNode::inRBStructs,
+		NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR in inRBStructs attributeAffects\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::timeStep,
+		NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR in inRBStructs attributeAffects\n");
 
 	return MS::kSuccess;
 }
 
 MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& inputOtherPlug, bool asSrc) {
 	MDataBlock data = forceCache();
-	if(affectedPlug == inClothMeshes) {
+	if(affectedPlug == inClothStructs) {
 		//get data from the output attribute of cloth, which is a struct (compound attribute)		
 		int lastIndex = affectedPlug.numElements();
 		MDataHandle handleFromCloth;
@@ -235,7 +280,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 	bool resetSolver = false;
 	bool instancedRendering = false;
 
-	if (plug == inClothMeshes) {
+	if (plug == inClothStructs) {
 		resetSolver = true;
 	}
 	
@@ -284,7 +329,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 	}
 	else
 	{
-		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothMeshes);
+		MArrayDataHandle clothsInArray = data.inputArrayValue(inClothStructs);
 		//source: https://forums.autodesk.com/t5/maya-programming/working-with-arrays-c/td-p/9631440
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(outputClothMeshes, &returnStatus);
 		MArrayDataBuilder outputArrayBuilder = outputArrayHandle.builder();

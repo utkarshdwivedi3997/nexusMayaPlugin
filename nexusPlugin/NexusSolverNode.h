@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NexusClothNode.h"
+#include "NexusRigidBodyNode.h"
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnNumericAttribute.h>
@@ -17,6 +18,7 @@
 #include <maya/MIOStream.h>
 #include <nexus/PBDSolver.h>
 #include <nexus/NexusCloth.h>
+#include <nexus/NexusRigidBody.h>
 #include <maya/MFnVectorArrayData.h>
 #include<maya/MFnArrayAttrsData.h>
 #include<maya/MArrayDataBuilder.h>
@@ -34,6 +36,7 @@ class NexusSolverNode : public MPxNode
 private:
 	uPtr<PBDSolver> solver;
 	std::vector<NexusCloth*> nexusCloths;
+	std::vector<NexusRigidBody*> nexusRBs;
 
 public:
 	NexusSolverNode() :solver(mkU<PBDSolver>()) {};
@@ -58,11 +61,17 @@ public:
 	static MTypeId id;
 	static MObject outputGeometry;
 	static MObject outputClothMeshes;
+	static MObject outputRBMeshes;
 
 	//Cloth related attribs
-	static MObject inClothMeshes;
+	static MObject inClothStructs;
 	static MObject inClothMass;
 	static MObject inClothkStretch;
 	static MObject inClothkBend;
 	static MObject inClothMesh;
+
+	// RB related attributes
+	static MObject inRBStructs;
+	static MObject inRBMass;
+	static MObject inRBMesh;
 };
