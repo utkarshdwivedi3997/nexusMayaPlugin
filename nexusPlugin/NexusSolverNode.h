@@ -93,6 +93,8 @@ public:
 
 	// Actual attributes
 	static MObject gravity;
+	static MObject solverSubsteps;
+	static MObject solverIterations;
 	static MObject windMag;
 	static MObject windDir;
 	static MObject windDirX, windDirY, windDirZ;
