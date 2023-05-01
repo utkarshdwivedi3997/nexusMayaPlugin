@@ -59,9 +59,12 @@ public:
 	float kStretch;
 	MObject mesh;
 	InputClothStruct(float m, float kB, float kS, MObject inmesh) : mass(m), kBend(kB), kStretch(kS), mesh(inmesh) {}
-	/*bool operator==(const InputClothStruct& input) const {
-		return this->mass == input.mass && kBend == input.kBend && kStretch == input.kStretch && meshesAreIdentical(mesh, input.mesh);
-	}*/
+};
+
+struct InputRigidBodyStruct {
+	float mass;
+	MObject mesh;
+	InputRigidBodyStruct(float m, MObject inmesh) : mass(m), mesh(inmesh) {}
 };
 
 class NexusSolverNode : public MPxNode
@@ -69,8 +72,9 @@ class NexusSolverNode : public MPxNode
 private:
 	uPtr<PBDSolver> solver;
 	std::vector<NexusCloth*> nexusCloths;
-	std::vector<InputClothStruct> prevState;
+	std::vector<InputClothStruct> prevClothState;
 	std::vector<NexusRigidBody*> nexusRBs;
+	std::vector<InputRigidBodyStruct> prevRBState;
 
 public:
 	NexusSolverNode() :solver(mkU<PBDSolver>()) {};
