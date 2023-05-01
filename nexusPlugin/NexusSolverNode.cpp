@@ -337,14 +337,14 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		int c = 0;
 		for (auto& pt : ptArr) {
 			float particlesMass = mass / inMesh.numVertices();
-			for (auto& pairs : pinnedClothVerts) {
-				if (pairs.first == nexusCloths.size() -1 && pairs.second == c) {
-					particlesMass = -1;
-				}
-			}
 			glm::vec3 pos(pt.x, pt.y, pt.z);
 			//uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, (c == 0 || c == 30) ? -1: particlesMass, FIXED_PARTICLE_SIZE);
 			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particlesMass, FIXED_PARTICLE_SIZE);
+			for (auto& pairs : pinnedClothVerts) {
+				if (pairs.first == nexusCloths.size() - 1 && pairs.second == c) {
+					currCloth->fixParticle(p.get());
+				}
+			}
 			currCloth->addParticle(std::move(p));
 			c++;
 		}
@@ -583,13 +583,14 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 				for (auto& pt : ptArr) {					
 					glm::vec3 pos(pt.x, pt.y, pt.z);
 					float particleMass = mass / mesh.numVertices();
-					for (auto& pairs : pinnedClothVerts) {
-						if (pairs.first == i && pairs.second == c) {
-							particleMass = -1;
-						}
-					}
+					
 					//if (c == 0 || c == 30) particleMass = -1;
 					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particleMass, FIXED_PARTICLE_SIZE);
+					for (auto& pairs : pinnedClothVerts) {
+						if (pairs.first == i && pairs.second == c) {
+							currCloth->fixParticle(p.get());
+						}
+					}
 					currCloth->addParticle(std::move(p));
 					outPtArr.append(pt);
 					c++;
