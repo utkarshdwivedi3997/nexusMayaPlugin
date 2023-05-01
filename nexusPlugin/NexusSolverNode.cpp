@@ -306,7 +306,8 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		int c = 0;
 		for (auto& pt : ptArr) {
 			glm::vec3 pos(pt.x, pt.y, pt.z);
-			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, (c == 0 || c == 30) ? -1: particlesMass, FIXED_PARTICLE_SIZE);
+			//uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, (c == 0 || c == 30) ? -1: particlesMass, FIXED_PARTICLE_SIZE);
+			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particlesMass, FIXED_PARTICLE_SIZE);
 			currCloth->addParticle(std::move(p));
 			c++;
 		}
@@ -538,7 +539,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 				for (auto& pt : ptArr) {					
 					glm::vec3 pos(pt.x, pt.y, pt.z);
 					float particleMass = mass / mesh.numVertices();
-					if (c == 0 || c == 30) particleMass = -1;
+					//if (c == 0 || c == 30) particleMass = -1;
 					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particleMass, FIXED_PARTICLE_SIZE);
 					currCloth->addParticle(std::move(p));
 					outPtArr.append(pt);
