@@ -11,8 +11,18 @@ mc.menuItem(label="Create Nexus Rigidbody", command="createNexusObject(1)", pare
 mc.menuItem(label="Attach Vertices to Locator", command="attachVertsToLocator()", parent=nexusMenu)
 mc.menuItem(label="Attach Selected Vertices", command="attachSelectedVertices()", parent=nexusMenu)
 
+#global consts
+nexusSolverNode = "nexusSolver"
+nexusClothNodeName = "nexusClothNode"
+nexusRigidBodyNodeName = "nexusRigidBodyNode"
+clothCount = 0
+rigidBodyCount = 0
+
+#setup commands
 mc.currentUnit(time="40fps")
 mc.playbackOptions(loop="once",maxTime=1000)
+mc.createNode("nexusSolverNode", name = nexusSolverNode)
+mc.connectAttr("time1.outTime", f"{nexusSolverNode}.timeStep")
 
 # int nexusObjectType
 # 0 = cloth
@@ -29,15 +39,31 @@ def createNexusObject(nexusObjectType):
 
 # Function to create NexusCloth objects out of the selected shapes
 def createNexusClothes(shapes):
+    global clothCount
     for item in shapes:
-        print("not implemented yet")
         #Create NexusClothNode for each of these shapes!
+        clothCount = clothCount + 1
+        mc.createNode(nexusClothNodeName, name = f"{nexusClothNodeName}{clothCount}")
+        mc.connectAttr(f"{item}.worldMesh", f"{nexusClothNodeName}{clothCount}.inputMesh")
+        mc.connectAttr( f"{nexusClothNodeName}{clothCount}.clothAttributes", f"{nexusSolverNode}.inCloths[{clothCount-1}]")
+        mc.createNode("transform",name=f"nexusCloth{clothCount}")
+        mc.createNode("mesh",name=f"NexusClothShape{clothCount}",parent=f"nexusCloth{clothCount}")
+        mc.sets(f"NexusClothShape{clothCount}", add="initialShadingGroup")
+        mc.connectAttr(f"{nexusSolverNode}.outCloths[{clothCount-1}]", f"NexusClothShape{clothCount}.inMesh")
 
 # Function to create NexusRigidbody objects out of the selected shapes
 def createNexusRigidbodies(shapes):
- for item in shapes:
-        print("not implemented yet")
+    global rigidBodyCount
+    for item in shapes:
         #Create NexusRigidbodyNode for each of these shapes!
+        rigidBodyCount = rigidBodyCount + 1
+        mc.createNode(nexusRigidBodyNodeName, name = f"{nexusRigidBodyNodeName}{rigidBodyCount}")
+        mc.connectAttr(f"{item}.worldMesh", f"{nexusRigidBodyNodeName}{rigidBodyCount}.inputMesh")
+        mc.connectAttr( f"{nexusRigidBodyNodeName}{rigidBodyCount}.rbAttributes", f"{nexusSolverNode}.inRBs[{rigidBodyCount-1}]")
+        mc.createNode("transform",name=f"nexusRigidBody{rigidBodyCount}")
+        mc.createNode("mesh",name=f"NexusRigidBodyShape{rigidBodyCount}",parent=f"nexusRigidBody{rigidBodyCount}")
+        mc.sets(f"NexusRigidBodyShape{rigidBodyCount}", add="initialShadingGroup")
+        mc.connectAttr(f"{nexusSolverNode}.outRBs[{rigidBodyCount-1}]", f"NexusRigidBodyShape{rigidBodyCount}.inMesh")
 
 def attachVertsToLocator():
     mc.confirmDialog(t="not implemented yet",m="not implemented yet",b="OK")
