@@ -82,7 +82,7 @@ def toggleParticleRendering():
         mc.disconnectAttr(f"{nexusSolverNode}.oGeom", "nexusInstancer.inputPoints")
 
 def pinClothVert():
-    sel = cmds.ls(selection=True)
+    sel = mc.ls(selection=True)
     node, component = sel[0].split(".")
     vertex_index = int(component.split("[")[1].rstrip("]"))
     nodeIdx = node.split("nexusCloth")[1]
