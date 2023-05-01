@@ -11,6 +11,7 @@ mc.menuItem(label="Create Nexus Rigidbody", command="createNexusObject(1)", pare
 mc.menuItem(label="Attach Vertices to Locator", command="attachVertsToLocator()", parent=nexusMenu)
 mc.menuItem(label="Attach Selected Vertices", command="attachSelectedVertices()", parent=nexusMenu)
 mc.menuItem(label="Toggle Particle Rendering", command="toggleParticleRendering()", parent=nexusMenu)
+mc.menuItem(label="Pin Selected Cloth Vertex", command="pinClothVert()", parent=nexusMenu)
 
 #global consts
 nexusSolverNode = "nexusSolver"
@@ -79,6 +80,13 @@ def toggleParticleRendering():
         mc.connectAttr(f"{nexusSolverNode}.oGeom", "nexusInstancer.inputPoints")
     else:
         mc.disconnectAttr(f"{nexusSolverNode}.oGeom", "nexusInstancer.inputPoints")
+
+def pinClothVert():
+    sel = cmds.ls(selection=True)
+    node, component = sel[0].split(".")
+    vertex_index = int(component.split("[")[1].rstrip("]"))
+    nodeIdx = node.split("nexusCloth")[1]
+    mc.pinNexusVert(node=nexusSolverNode, clothId=int(nodeIdx)-1, vertId=int(vertex_index))
 
 def attachVertsToLocator():
     mc.confirmDialog(t="not implemented yet",m="not implemented yet",b="OK")

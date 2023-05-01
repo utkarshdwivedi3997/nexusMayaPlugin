@@ -1,5 +1,7 @@
 #pragma once
+#include "NexusSolverNode.h"
 #include <maya/MPxCommand.h>
+#include <maya/MSelectionList.h>
 #include <maya/MSyntax.h>
 #include <maya/MArgDatabase.h>
 #include <string>

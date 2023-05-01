@@ -27,7 +27,7 @@ MStatus initializePlugin(MObject obj)
     MFnPlugin plugin(obj, "NexusPhysics");
 
     // Register Command
-    status = plugin.registerCommand("nexus", NexusCommand::creator);
+    status = plugin.registerCommand("pinNexusVert", NexusCommand::creator);
     if (!status) {
         status.perror("registerCommand");
         return status;

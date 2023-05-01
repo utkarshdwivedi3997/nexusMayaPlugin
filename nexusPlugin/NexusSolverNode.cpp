@@ -301,10 +301,15 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		nexusCloths.push_back(currCloth.get());
 		MPointArray ptArr;
 		MFnMesh inMesh = mesh.asMesh();
-		inMesh.getPoints(ptArr, MSpace::kWorld);
-		float particlesMass = mass / inMesh.numVertices();
+		inMesh.getPoints(ptArr, MSpace::kWorld);		
 		int c = 0;
 		for (auto& pt : ptArr) {
+			float particlesMass = mass / inMesh.numVertices();
+			for (auto& pairs : pinnedClothVerts) {
+				if (pairs.first == nexusCloths.size() -1 && pairs.second == c) {
+					particlesMass = -1;
+				}
+			}
 			glm::vec3 pos(pt.x, pt.y, pt.z);
 			//uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, (c == 0 || c == 30) ? -1: particlesMass, FIXED_PARTICLE_SIZE);
 			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particlesMass, FIXED_PARTICLE_SIZE);
@@ -398,6 +403,13 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		solver->addObject(std::move(currRB));
 	}
 	return MPxNode::connectionMade(affectedPlug, inputOtherPlug, asSrc);
+}
+MStatus NexusSolverNode::pinCloth(int clothId, int vertId) {
+	NexusCloth* cloth = nexusCloths.at(clothId);
+	Particle* p = cloth->getParticles().at(vertId).get();
+	cloth->fixParticle(p);
+	pinnedClothVerts.push_back(std::make_pair(clothId, vertId));
+	return MStatus::kSuccess;
 }
 
 MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
@@ -539,7 +551,11 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 				for (auto& pt : ptArr) {					
 					glm::vec3 pos(pt.x, pt.y, pt.z);
 					float particleMass = mass / mesh.numVertices();
-					//if (c == 0 || c == 30) particleMass = -1;
+					for (auto& pairs : pinnedClothVerts) {
+						if (pairs.first == i && pairs.second == c) {
+							particleMass = -1;
+						}
+					}
 					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particleMass, FIXED_PARTICLE_SIZE);
 					currCloth->addParticle(std::move(p));
 					outPtArr.append(pt);
