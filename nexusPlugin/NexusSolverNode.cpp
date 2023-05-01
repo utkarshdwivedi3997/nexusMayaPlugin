@@ -588,7 +588,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 		{
 			rbsInArray.jumpToArrayElement(i);
 			MDataHandle rbElement = rbsInArray.inputValue();
-			float mass = rbElement.child(inRBMesh).asDouble();
+			float mass = rbElement.child(inRBMass).asDouble();
 			MFnMesh mesh = rbElement.child(inRBMesh).asMesh();
 
 			MPointArray ptArr;
@@ -643,8 +643,9 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 				solver->addObject(std::move(currRB));
 			}
 			
+			std::vector<vec3> movedVerts = nexusRBs[i]->getMovedVertices();
 			for (int j = 0; j < ptArr.length(); j++) {
-				glm::vec3 newPos = nexusRBs[i]->getMovedVertices()[j];
+				glm::vec3 newPos = movedVerts[j];
 				MPoint pt(newPos.x, newPos.y, newPos.z);
 				outPtArr.append(pt);
 			}
