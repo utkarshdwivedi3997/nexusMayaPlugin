@@ -75,6 +75,7 @@ private:
 	std::vector<InputClothStruct> prevClothState;
 	std::vector<NexusRigidBody*> nexusRBs;
 	std::vector<InputRigidBodyStruct> prevRBState;
+	std::vector<std::pair<int, int>> pinnedClothVerts;
 
 public:
 	NexusSolverNode() :solver(mkU<PBDSolver>()) {};
@@ -83,6 +84,7 @@ public:
 	MStatus connectionMade(const MPlug& affectedPlug, const MPlug& inputOtherPlug, bool asSrc) override;
 	static  void* creator();
 	static  MStatus initialize();
+	MStatus pinCloth(int clothId, int vertId);
 	//MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
 
 	// Compound grouping attributes
@@ -91,6 +93,8 @@ public:
 
 	// Actual attributes
 	static MObject gravity;
+	static MObject solverSubsteps;
+	static MObject solverIterations;
 	static MObject windMag;
 	static MObject windDir;
 	static MObject windDirX, windDirY, windDirZ;

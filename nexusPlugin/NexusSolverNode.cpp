@@ -24,6 +24,8 @@ MTypeId NexusSolverNode::id(0x80000);
 MObject NexusSolverNode::forcesCmpd;
 MObject NexusSolverNode::timeCmpd;
 MObject NexusSolverNode::gravity;
+MObject NexusSolverNode::solverSubsteps;
+MObject NexusSolverNode::solverIterations;
 MObject NexusSolverNode::windMag;
 MObject NexusSolverNode::windDir;
 MObject NexusSolverNode::windDirX;
@@ -114,6 +116,12 @@ MStatus NexusSolverNode::initialize()
 	NexusSolverNode::gravity = nAttr.create("gravity", "g", MFnNumericData::kDouble, -9.8, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode gravity attribute\n");
 
+	NexusSolverNode::solverSubsteps = nAttr.create("solverSubsteps", "substeps", MFnNumericData::kDouble, 3, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode solverSubsteps attribute\n");
+
+	NexusSolverNode::solverIterations = nAttr.create("solverIterations", "iters", MFnNumericData::kDouble, 3, &returnStatus);
+	McheckErr(returnStatus, "ERROR creating NexusSolverNode solverIterations attribute\n");
+
 	NexusSolverNode::windMag = nAttr.create("windMag", "wMag", MFnNumericData::kDouble, 0.0, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode windMag attribute\n");
 
@@ -195,11 +203,17 @@ MStatus NexusSolverNode::initialize()
 	geomAttr.setUsesArrayDataBuilder(true);
 
 	// Add attributes to node
+	returnStatus = addAttribute(NexusSolverNode::solverSubsteps);
+	McheckErr(returnStatus, "ERROR adding solverSubsteps attribute\n");
+
+	returnStatus = addAttribute(NexusSolverNode::solverIterations);
+	McheckErr(returnStatus, "ERROR adding solverIterations attribute\n");
+
 	returnStatus = addAttribute(NexusSolverNode::gravity);
-	McheckErr(returnStatus, "ERROR adding windDir attribute\n");
+	McheckErr(returnStatus, "ERROR adding gravity attribute\n");
 
 	returnStatus = addAttribute(NexusSolverNode::windMag);
-	McheckErr(returnStatus, "ERROR adding windDir attribute\n");
+	McheckErr(returnStatus, "ERROR adding windMag attribute\n");
 
 	returnStatus = addAttribute(NexusSolverNode::windDir);
 	McheckErr(returnStatus, "ERROR adding windDir attribute\n");
@@ -226,6 +240,12 @@ MStatus NexusSolverNode::initialize()
 	McheckErr(returnStatus, "ERROR adding output RB meshes attribute\n");
 
 	//// Attribute affects (changing attributes should change output)
+	returnStatus = attributeAffects(NexusSolverNode::solverSubsteps,  NexusSolverNode::outputGeometry);
+	McheckErr(returnStatus, "ERROR in gravity solverSubsteps\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::solverIterations, NexusSolverNode::outputGeometry);
+	McheckErr(returnStatus, "ERROR in gravity solverIterations\n");
+
 	returnStatus = attributeAffects(NexusSolverNode::gravity,
 		NexusSolverNode::outputGeometry);
 	McheckErr(returnStatus, "ERROR in gravity attributeAffects\n");
@@ -270,6 +290,18 @@ MStatus NexusSolverNode::initialize()
 		NexusSolverNode::outputRBMeshes);
 	McheckErr(returnStatus, "ERROR in inRBStructs attributeAffects\n");
 
+	returnStatus = attributeAffects(NexusSolverNode::solverSubsteps, NexusSolverNode::outputClothMeshes);
+	McheckErr(returnStatus, "ERROR in gravity solverSubsteps\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::solverIterations, NexusSolverNode::outputClothMeshes);
+	McheckErr(returnStatus, "ERROR in gravity solverIterations\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::solverSubsteps, NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR in gravity solverSubsteps\n");
+
+	returnStatus = attributeAffects(NexusSolverNode::solverIterations, NexusSolverNode::outputRBMeshes);
+	McheckErr(returnStatus, "ERROR in gravity solverIterations\n");
+
 	return MS::kSuccess;
 }
 
@@ -301,12 +333,18 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		nexusCloths.push_back(currCloth.get());
 		MPointArray ptArr;
 		MFnMesh inMesh = mesh.asMesh();
-		inMesh.getPoints(ptArr, MSpace::kWorld);
-		float particlesMass = mass / inMesh.numVertices();
+		inMesh.getPoints(ptArr, MSpace::kWorld);		
 		int c = 0;
 		for (auto& pt : ptArr) {
+			float particlesMass = mass / inMesh.numVertices();
+			for (auto& pairs : pinnedClothVerts) {
+				if (pairs.first == nexusCloths.size() -1 && pairs.second == c) {
+					particlesMass = -1;
+				}
+			}
 			glm::vec3 pos(pt.x, pt.y, pt.z);
-			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, (c == 0 || c == 30) ? -1: particlesMass, FIXED_PARTICLE_SIZE);
+			//uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, (c == 0 || c == 30) ? -1: particlesMass, FIXED_PARTICLE_SIZE);
+			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particlesMass, FIXED_PARTICLE_SIZE);
 			currCloth->addParticle(std::move(p));
 			c++;
 		}
@@ -378,7 +416,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 			FIXED_PARTICLE_SIZE,
 			FIXED_PARTICLE_SIZE, 0.01f);
 
-		float particleMass = mass / voxelizedMesh->nvertices;
+		float particleMass = mass;// / voxelizedMesh->nvertices;
 
 		std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
 		MGlobal::displayInfo(MString(s.c_str()));
@@ -397,6 +435,13 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		solver->addObject(std::move(currRB));
 	}
 	return MPxNode::connectionMade(affectedPlug, inputOtherPlug, asSrc);
+}
+MStatus NexusSolverNode::pinCloth(int clothId, int vertId) {
+	NexusCloth* cloth = nexusCloths.at(clothId);
+	Particle* p = cloth->getParticles().at(vertId).get();
+	cloth->fixParticle(p);
+	pinnedClothVerts.push_back(std::make_pair(clothId, vertId));
+	return MStatus::kSuccess;
 }
 
 MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
@@ -538,7 +583,12 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 				for (auto& pt : ptArr) {					
 					glm::vec3 pos(pt.x, pt.y, pt.z);
 					float particleMass = mass / mesh.numVertices();
-					if (c == 0 || c == 30) particleMass = -1;
+					for (auto& pairs : pinnedClothVerts) {
+						if (pairs.first == i && pairs.second == c) {
+							particleMass = -1;
+						}
+					}
+					//if (c == 0 || c == 30) particleMass = -1;
 					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particleMass, FIXED_PARTICLE_SIZE);
 					currCloth->addParticle(std::move(p));
 					outPtArr.append(pt);
@@ -625,7 +675,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 																			FIXED_PARTICLE_SIZE, 
 																			FIXED_PARTICLE_SIZE, 0.01f);
 
-				float particleMass = mass / voxelizedMesh->nvertices;
+				float particleMass = mass;// / voxelizedMesh->nvertices;
 
 				MGlobal::displayInfo(MString("num voxelized verts: ") + voxelizedMesh->nvertices);
 				int objId = NexusRigidBody::getObjectID();

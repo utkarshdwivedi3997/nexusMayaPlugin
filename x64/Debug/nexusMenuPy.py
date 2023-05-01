@@ -10,6 +10,8 @@ mc.menuItem(label="Create Nexus Cloth", command="createNexusObject(0)", parent=n
 mc.menuItem(label="Create Nexus Rigidbody", command="createNexusObject(1)", parent=nexusMenu)
 mc.menuItem(label="Attach Vertices to Locator", command="attachVertsToLocator()", parent=nexusMenu)
 mc.menuItem(label="Attach Selected Vertices", command="attachSelectedVertices()", parent=nexusMenu)
+mc.menuItem(label="Toggle Particle Rendering", command="toggleParticleRendering()", parent=nexusMenu)
+mc.menuItem(label="Pin Selected Cloth Vertex", command="pinClothVert()", parent=nexusMenu)
 
 #global consts
 nexusSolverNode = "nexusSolver"
@@ -17,12 +19,18 @@ nexusClothNodeName = "nexusClothNode"
 nexusRigidBodyNodeName = "nexusRigidBodyNode"
 clothCount = 0
 rigidBodyCount = 0
+particleRendering = False
 
 #setup commands
-mc.currentUnit(time="40fps")
+mc.currentUnit(time="80fps")
 mc.playbackOptions(loop="once",maxTime=1000)
 mc.createNode("nexusSolverNode", name = nexusSolverNode)
 mc.connectAttr("time1.outTime", f"{nexusSolverNode}.timeStep")
+mc.polySphere(name = "nexusSphere")
+mc.hide("nexusSphere")
+mc.setAttr("polySphere1.radius",0.25)
+mc.instancer(name = "nexusInstancer")
+mc.connectAttr("nexusSphere.matrix", "nexusInstancer.inputHierarchy[0]")
 
 # int nexusObjectType
 # 0 = cloth
@@ -64,6 +72,21 @@ def createNexusRigidbodies(shapes):
         mc.createNode("mesh",name=f"NexusRigidBodyShape{rigidBodyCount}",parent=f"nexusRigidBody{rigidBodyCount}")
         mc.sets(f"NexusRigidBodyShape{rigidBodyCount}", add="initialShadingGroup")
         mc.connectAttr(f"{nexusSolverNode}.outRBs[{rigidBodyCount-1}]", f"NexusRigidBodyShape{rigidBodyCount}.inMesh")
+
+def toggleParticleRendering():
+    global particleRendering
+    particleRendering = not particleRendering
+    if particleRendering:
+        mc.connectAttr(f"{nexusSolverNode}.oGeom", "nexusInstancer.inputPoints")
+    else:
+        mc.disconnectAttr(f"{nexusSolverNode}.oGeom", "nexusInstancer.inputPoints")
+
+def pinClothVert():
+    sel = cmds.ls(selection=True)
+    node, component = sel[0].split(".")
+    vertex_index = int(component.split("[")[1].rstrip("]"))
+    nodeIdx = node.split("nexusCloth")[1]
+    mc.pinNexusVert(node=nexusSolverNode, clothId=int(nodeIdx)-1, vertId=int(vertex_index))
 
 def attachVertsToLocator():
     mc.confirmDialog(t="not implemented yet",m="not implemented yet",b="OK")
