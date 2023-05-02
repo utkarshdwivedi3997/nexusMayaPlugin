@@ -519,6 +519,22 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 			MTime mfps(1, MTime::kSeconds);
 			double fps = mfps.asUnits(MTime::uiUnit());
 			double deltaT = 1.f / fps;
+
+			vec3 grav = vec3(0.0f, data.inputValue(gravity).asDouble(), 0.0f);
+			MGlobal::displayInfo(MString("gravity: ") + grav.x + MString(", ") + grav.y + MString(", ") + grav.z);
+			solver->solverAttributes.gravity = grav;
+			int solverIter = data.inputValue(solverIterations).asInt();
+			solver->solverAttributes.solverIterations = solverIter;
+			int solverSub = data.inputValue(solverSubsteps).asInt();
+			solver->solverAttributes.solverSubsteps = solverSub;
+
+			float windM = data.inputValue(windMag).asDouble();
+			vec3 wind = windM * vec3(data.inputValue(windDirX).asDouble(),
+				data.inputValue(windDirY).asDouble(),
+				data.inputValue(windDirZ).asDouble());
+			MGlobal::displayInfo(MString("wind: ") + wind.x + MString(", ") + wind.y + MString(", ") + wind.z);
+			solver->solverAttributes.wind = wind;
+
 			solver->update(deltaT);
 		}
 		data.setClean(plug);
