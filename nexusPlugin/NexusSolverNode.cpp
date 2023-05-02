@@ -416,7 +416,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 			FIXED_PARTICLE_SIZE,
 			FIXED_PARTICLE_SIZE, 0.01f);
 
-		float particleMass = mass;// / voxelizedMesh->nvertices;
+		float particleMass = mass / voxelizedMesh->nvertices;
 
 		std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
 		MGlobal::displayInfo(MString(s.c_str()));
@@ -692,7 +692,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 																			FIXED_PARTICLE_SIZE, 
 																			FIXED_PARTICLE_SIZE, 0.01f);
 
-				float particleMass = mass;// / voxelizedMesh->nvertices;
+				float particleMass = mass / voxelizedMesh->nvertices;
 
 				MGlobal::displayInfo(MString("num voxelized verts: ") + voxelizedMesh->nvertices);
 				int objId = NexusRigidBody::getObjectID();
