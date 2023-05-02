@@ -116,10 +116,10 @@ MStatus NexusSolverNode::initialize()
 	NexusSolverNode::gravity = nAttr.create("gravity", "g", MFnNumericData::kDouble, -9.8, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode gravity attribute\n");
 
-	NexusSolverNode::solverSubsteps = nAttr.create("solverSubsteps", "substeps", MFnNumericData::kDouble, 2, &returnStatus);
+	NexusSolverNode::solverSubsteps = nAttr.create("solverSubsteps", "substeps", MFnNumericData::kInt, 5, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode solverSubsteps attribute\n");
 
-	NexusSolverNode::solverIterations = nAttr.create("solverIterations", "iters", MFnNumericData::kDouble, 5, &returnStatus);
+	NexusSolverNode::solverIterations = nAttr.create("solverIterations", "iters", MFnNumericData::kInt, 1, &returnStatus);
 	McheckErr(returnStatus, "ERROR creating NexusSolverNode solverIterations attribute\n");
 
 	NexusSolverNode::windMag = nAttr.create("windMag", "wMag", MFnNumericData::kDouble, 0.0, &returnStatus);
@@ -521,18 +521,20 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 			double deltaT = 1.f / fps;
 
 			vec3 grav = vec3(0.0f, data.inputValue(gravity).asDouble(), 0.0f);
-			MGlobal::displayInfo(MString("gravity: ") + grav.x + MString(", ") + grav.y + MString(", ") + grav.z);
+			//MGlobal::displayInfo(MString("gravity: ") + grav.x + MString(", ") + grav.y + MString(", ") + grav.z);
 			solver->solverAttributes.gravity = grav;
 			int solverIter = data.inputValue(solverIterations).asInt();
 			solver->solverAttributes.solverIterations = solverIter;
 			int solverSub = data.inputValue(solverSubsteps).asInt();
 			solver->solverAttributes.solverSubsteps = solverSub;
+			MGlobal::displayInfo(MString("substeps: ") + solverSub);
+			MGlobal::displayInfo(MString("iterations: ") + solverIter);
 
 			float windM = data.inputValue(windMag).asDouble();
 			vec3 wind = windM * vec3(data.inputValue(windDirX).asDouble(),
 				data.inputValue(windDirY).asDouble(),
 				data.inputValue(windDirZ).asDouble());
-			MGlobal::displayInfo(MString("wind: ") + wind.x + MString(", ") + wind.y + MString(", ") + wind.z);
+			//MGlobal::displayInfo(MString("wind: ") + wind.x + MString(", ") + wind.y + MString(", ") + wind.z);
 			solver->solverAttributes.wind = wind;
 
 			solver->update(deltaT);
