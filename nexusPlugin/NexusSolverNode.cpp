@@ -15,6 +15,7 @@
 
 #include <maya/MIOStream.h>
 #include <nexus/Helper.h>
+#include <map>
 
 // DO NOT GET RID OF THIS DEFINE AND INCLUDE FOR VOXELIZER OTHERWISE THINGS WILL BREAK!
 #define VOXELIZER_IMPLEMENTATION
@@ -353,16 +354,43 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		for (unsigned int e = 0; e < inMesh.numEdges(); e++) {
 			int2 vertdIds;
 			inMesh.getEdgeVertices(e, vertdIds);
-			Particle* p1 = currCloth.get()->getParticles().at(vertdIds[0]).get();
-			Particle* p2 = currCloth.get()->getParticles().at(vertdIds[1]).get();
-			currCloth.get()->addStretchConstraint(p1, p2, glm::distance(p1->x, p2->x), kStretch);
+			Particle* p1 = currCloth->getParticles().at(vertdIds[0]).get();
+			Particle* p2 = currCloth->getParticles().at(vertdIds[1]).get();
+			currCloth->addStretchConstraint(p1, p2, glm::distance(p1->x, p2->x), kStretch);
 		}
 
 		//bending constraints
-		/*MItMeshPolygon polyIter(mesh.asMesh());
-		for (; !polyIter.isDone(); polyIter.next()) {
-		}*/
-
+		MIntArray triCounts;
+		MIntArray triVerts;
+		std::map<std::pair<int, int>, std::vector<int>> edgesToThirdVertexOfFace;
+		inMesh.getTriangles(triCounts, triVerts);
+		for (UINT i = 0, offset = 0; i < triCounts.length(); i++, offset += triCounts[i]) {
+			for(UINT j = 0; j < triCounts[i]; j++) {
+				int index = 3 * (offset + j);
+				for (int k = 0; k < 3; k++) {
+					int v1 = triVerts[index + (k % 3)];
+					int v2 = triVerts[index + ((k+1) % 3)];
+					int v3 = triVerts[index + ((k + 2) % 3)];
+					std::pair<int, int> edge = std::make_pair<>(glm::min(v1, v2), glm::max(v1, v2));
+					if (edgesToThirdVertexOfFace.find(edge) == edgesToThirdVertexOfFace.end()) {
+						std::vector<int> arrayOfThirdVertexIndices{ v3 };
+						edgesToThirdVertexOfFace.insert(std::make_pair(edge, arrayOfThirdVertexIndices));
+					}
+					else {
+						edgesToThirdVertexOfFace.at(edge).push_back(v3);
+					}
+				}
+			}
+		}
+		for (auto& entry : edgesToThirdVertexOfFace) {
+			if (entry.second.size() == 2) {
+				Particle* p1 = currCloth->getParticles().at(entry.first.first).get();
+				Particle* p2 = currCloth->getParticles().at(entry.first.second).get();
+				Particle* p3 = currCloth->getParticles().at(entry.second[0]).get();
+				Particle* p4 = currCloth->getParticles().at(entry.second[1]).get();
+				currCloth->addBendingConstraint(p1, p2, p3, p4, kBend);
+			}
+		}
 
 		//add to solver
 		solver->addObject(std::move(currCloth));
@@ -527,8 +555,8 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 			solver->solverAttributes.solverIterations = solverIter;
 			int solverSub = data.inputValue(solverSubsteps).asInt();
 			solver->solverAttributes.solverSubsteps = solverSub;
-			MGlobal::displayInfo(MString("substeps: ") + solverSub);
-			MGlobal::displayInfo(MString("iterations: ") + solverIter);
+			//MGlobal::displayInfo(MString("substeps: ") + solverSub);
+			//MGlobal::displayInfo(MString("iterations: ") + solverIter);
 
 			float windM = data.inputValue(windMag).asDouble();
 			vec3 wind = windM * vec3(data.inputValue(windDirX).asDouble(),
@@ -623,6 +651,37 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 				}
 
 				//bending constraints
+				MIntArray triCounts;
+				MIntArray triVerts;
+				std::map<std::pair<int, int>, std::vector<int>> edgesToThirdVertexOfFace;
+				mesh.getTriangles(triCounts, triVerts);
+				for (UINT i = 0, offset = 0; i < triCounts.length(); i++, offset += triCounts[i]) {
+					for (UINT j = 0; j < triCounts[i]; j++) {
+						int index = 3 * (offset + j);
+						for (int k = 0; k < 3; k++) {
+							int v1 = triVerts[index + (k % 3)];
+							int v2 = triVerts[index + ((k + 1) % 3)];
+							int v3 = triVerts[index + ((k + 2) % 3)];
+							std::pair<int, int> edge = std::make_pair<>(glm::min(v1, v2), glm::max(v1, v2));
+							if (edgesToThirdVertexOfFace.find(edge) == edgesToThirdVertexOfFace.end()) {
+								std::vector<int> arrayOfThirdVertexIndices{ v3 };
+								edgesToThirdVertexOfFace.insert(std::make_pair(edge, arrayOfThirdVertexIndices));
+							}
+							else {
+								edgesToThirdVertexOfFace.at(edge).push_back(v3);
+							}
+						}
+					}
+				}
+				for (auto& entry : edgesToThirdVertexOfFace) {
+					if (entry.second.size() == 2) {
+						Particle* p1 = currCloth->getParticles().at(entry.first.first).get();
+						Particle* p2 = currCloth->getParticles().at(entry.first.second).get();
+						Particle* p3 = currCloth->getParticles().at(entry.second[0]).get();
+						Particle* p4 = currCloth->getParticles().at(entry.second[1]).get();
+						currCloth->addBendingConstraint(p1, p2, p3, p4, kBend);
+					}
+				}
 
 
 				//add to solver
