@@ -337,7 +337,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 		inMesh.getPoints(ptArr, MSpace::kWorld);		
 		int c = 0;
 		for (auto& pt : ptArr) {
-			float particlesMass = mass / inMesh.numVertices();
+			float particlesMass = mass;// / inMesh.numVertices();
 			glm::vec3 pos(pt.x, pt.y, pt.z);
 			//uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, (c == 0 || c == 30) ? -1: particlesMass, FIXED_PARTICLE_SIZE);
 			uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particlesMass, FIXED_PARTICLE_SIZE);
@@ -444,7 +444,7 @@ MStatus NexusSolverNode::connectionMade(const MPlug& affectedPlug, const MPlug& 
 			FIXED_PARTICLE_SIZE,
 			FIXED_PARTICLE_SIZE, 0.01f);
 
-		float particleMass = mass / voxelizedMesh->nvertices;
+		float particleMass = mass;// / voxelizedMesh->nvertices;
 
 		std::string s = "num voxelized verts: " + std::to_string(voxelizedMesh->nvertices);
 		MGlobal::displayInfo(MString(s.c_str()));
@@ -558,7 +558,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 			//MGlobal::displayInfo(MString("substeps: ") + solverSub);
 			//MGlobal::displayInfo(MString("iterations: ") + solverIter);
 
-			float windM = data.inputValue(windMag).asDouble();
+			double windM = data.inputValue(windMag).asDouble();
 			vec3 wind = windM * vec3(data.inputValue(windDirX).asDouble(),
 				data.inputValue(windDirY).asDouble(),
 				data.inputValue(windDirZ).asDouble());
@@ -628,7 +628,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 				nexusCloths.push_back(currCloth.get());
 				for (auto& pt : ptArr) {					
 					glm::vec3 pos(pt.x, pt.y, pt.z);
-					float particleMass = mass / mesh.numVertices();
+					float particleMass = mass;// / mesh.numVertices();
 					
 					//if (c == 0 || c == 30) particleMass = -1;
 					uPtr<Particle> p = mkU<Particle>(pos, glm::vec3(0.f), -1, particleMass, FIXED_PARTICLE_SIZE);
@@ -753,7 +753,7 @@ MStatus NexusSolverNode::compute(const MPlug& plug, MDataBlock& data)
 																			FIXED_PARTICLE_SIZE, 
 																			FIXED_PARTICLE_SIZE, 0.01f);
 
-				float particleMass = mass / voxelizedMesh->nvertices;
+				float particleMass = mass;// / voxelizedMesh->nvertices;
 
 				MGlobal::displayInfo(MString("num voxelized verts: ") + voxelizedMesh->nvertices);
 				int objId = NexusRigidBody::getObjectID();
